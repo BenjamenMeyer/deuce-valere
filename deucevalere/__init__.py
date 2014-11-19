@@ -1,3 +1,3 @@
 """
-Deuce Valere API
+Deuce Valere
 """
