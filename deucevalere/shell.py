@@ -14,6 +14,7 @@ import deuceclient.client.deuce as client
 from deucevalere import vault_cleanup as valere_cleanup
 from deucevalere import vault_validate as valere_validate
 from deucevalere.api.auth import *
+from deucevalare.api.system import Manager
 
 
 class ProgramArgumentError(ValueError):
@@ -150,16 +151,13 @@ def vault_validate(log, arguments):
     """
     auth_engine, deuceclient, vault = __api_operation_prep(log, arguments)
 
-    start_marker = arguments.start
-    end_marker = arguments.end
+    manager = Manager(marker_start=arguments.start,
+                      marker_end=arguments.end)
 
-    # TODO
-    # return valere_valiate(auth_engine,
-    #                      deuceclient,
-    #                      vault,
-    #                      start_marker,
-    #                      end_marker)
-    return 0
+    return valere_valiate(auth_engine,
+                          deuceclient,
+                          vault,
+                          manager)
 
 
 def vault_cleanup(log, arguments):
@@ -169,16 +167,13 @@ def vault_cleanup(log, arguments):
     """
     auth_engine, deuceclient, vault = __api_operation_prep(log, arguments)
 
-    start_marker = arguments.start
-    end_marker = arguments.end
+    manager = Manager(marker_start=arguments.start,
+                      marker_end=arguments.end)
 
-    # TODO
-    # return valere_cleanup(auth_engine,
-    #                      deuceclient,
-    #                      vault,
-    #                      start_marker,
-    #                      end_marker)
-    return 0
+    return valere_cleanup(auth_engine,
+                          deuceclient,
+                          vault,
+                          manager)
 
 
 def main():
