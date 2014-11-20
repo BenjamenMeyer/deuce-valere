@@ -3,6 +3,8 @@ Deuce Valere - Tests - API - System - Manager
 """
 import unittest
 
+from deuceclient.tests import *
+
 from deucevalere.api.system import *
 
 
@@ -29,8 +31,8 @@ class DeuceValereApiSystemManagerTest(unittest.TestCase):
     def test_create_cases(self):
 
         cases = [
-            ('scott', 'jean'),
-            ('wolverine', None),
+            (create_block()[0], create_block()[0]),
+            (create_block()[0], None),
             (None, None)
         ]
 

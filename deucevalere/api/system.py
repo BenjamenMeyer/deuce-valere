@@ -4,6 +4,10 @@ Deuce Valere - API - System
 import contextlib
 import datetime
 
+from stoplight import validate
+
+from deucevalere.common.validation import *
+
 
 class TimeManager(contextlib.ContextDecorator):
 
@@ -115,7 +119,15 @@ class Manager(object):
     Deuce Valere Manager
     """
 
+    @validate(marker_start=MetadataBlockIdRuleNoneOkay,
+              marker_end=MetadataBlockIdRuleNoneOkay)
     def __init__(self, marker_start=None, marker_end=None):
+        """
+        :param marker_start: the start of the range to use, inclusive,
+                             may be None
+        :param marker_end: the end of the range to use, exclusive,
+                           may be None
+        """
         self.__times = {
             'validation': TimeManager('validation'),
             'cleanup': TimeManager('cleanup')

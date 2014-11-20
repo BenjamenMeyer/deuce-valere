@@ -6,8 +6,8 @@ import unittest
 import deuceclient.client.deuce as client
 from stoplight import validate
 
-from deucevalere.api.auth import baseauth
 import deucevalere.common.validation as v
+from deucevalere.tests import *
 
 
 class TestRulesBase(unittest.TestCase):
@@ -40,23 +40,6 @@ class TestRulesBase(unittest.TestCase):
             negative_cases.remove('')
 
         return (positive_cases, negative_cases)
-
-
-class FakeAuthEngine(baseauth.AuthenticationBase):
-    def GetToken(self, retry=0):
-        return 'alibaba'
-
-    def IsExpired(self, fuzz=0):
-        return False
-
-    def _AuthToken(self):
-        return 'alibaba'
-
-    def _AuthTenantId(self):
-        return 'sesame'
-
-    def _AuthExpirationTime(self):
-        return datetime.datetime.max()
 
 
 class TestAuthEngineRule(TestRulesBase):
