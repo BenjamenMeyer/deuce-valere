@@ -1,3 +1,2 @@
-requests
-stoplight
--e git+https://github.com/rackerlabs/deuce-client.git@master#egg=deuceclient-master
+stoplight>=1.0.1
+deuce-client
