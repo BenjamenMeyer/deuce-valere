@@ -26,7 +26,7 @@ def _abort(error_code):
     abort_errors = {
         100: TypeError
     }
-    return abort_errors[error_code]
+    raise abort_errors[error_code]
 
 AuthEngineRule = Rule(val_authenticator_instance(), lambda: _abort(100))
 ClientRule = Rule(val_deuceclient_instance(), lambda: _abort(100))
