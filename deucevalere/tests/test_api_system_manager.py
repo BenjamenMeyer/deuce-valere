@@ -31,8 +31,13 @@ class DeuceValereApiSystemManagerTest(unittest.TestCase):
     def test_create_cases(self):
 
         cases = [
+            # Both Start and End Markers
             (create_block()[0], create_block()[0]),
+            # Start Marker, No End Marker
             (create_block()[0], None),
+            # No Start Marker, End Marker
+            (None, create_block()[0]),
+            # Neither Starr nor End Markers
             (None, None)
         ]
 
