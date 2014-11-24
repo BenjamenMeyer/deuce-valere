@@ -242,11 +242,11 @@ def main():
 
     # If the caller provides a log configuration then use it
     # Otherwise we'll add our own little configuration as a default
-    # That captures stdout and outputs to output/integration-slave-server.out
+    # That captures stdout and outputs to .deuce_valere-py.log
     if arguments.logconfig is not None:
         logging.config.fileConfig(arguments.logconfig)
     else:
-        lf = logging.FileHandler('.deuce_client-py.log')
+        lf = logging.FileHandler('.deuce_valere-py.log')
         lf.setLevel(logging.DEBUG)
 
         log = logging.getLogger()
