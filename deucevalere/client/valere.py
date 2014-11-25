@@ -50,6 +50,13 @@ class ValereClient(object):
 
         Note: This will need to be updated when the format of the
               storage id changes.
+
+        Note: It is impossible to create a UUID that is guarateed to be the
+              lowest possible value using a UUID generator. However, UUIDs
+              are alphanumeric values; thus '0' is always the lowest value
+              and filling out a formatstring that looks like a UUID string
+              but uses all zeros (0) will giveus a string that will compare
+              as the lowest possible UUID value.
         """
         if metadata_id is not None:
             return '{0:}_{1:}-{2:}-{2:}-{2:}-{3:}'.format(metadata_id,

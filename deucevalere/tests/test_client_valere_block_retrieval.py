@@ -60,9 +60,6 @@ class TestValereClientBlockRetrieval(unittest.TestCase):
             block_set = None
             if gg_start is not None:
                 block_set = self.meta_data[gg_start:gg_end]
-                block_start = self.meta_data[gg_start]
-                url_params = urllib.parse.urlencode({'marker': block_start})
-                url = '{0}?{1}'.format(url_base, url_params)
             else:
                 block_set = self.meta_data[:gg_end]
 
@@ -113,9 +110,6 @@ class TestValereClientBlockRetrieval(unittest.TestCase):
             block_set = None
             if gg_start is not None:
                 block_set = self.storage_data[gg_start:gg_end]
-                block_start = self.storage_data[gg_start]
-                url_params = urllib.parse.urlencode({'marker': block_start})
-                url = '{0}?{1}'.format(url_base, url_params)
             else:
                 block_set = self.storage_data[:gg_end]
 
