@@ -5,6 +5,7 @@ from stoplight import validate
 
 from deucevalere.api.auth import *
 from deucevalere.api.system import Manager
+from deucevalere.common.validation_instance import *
 from deucevalere.common.validation import *
 
 
@@ -20,14 +21,12 @@ def version():
                               __DEUCE_VALERE_VERSION__['minor'])
 
 
-@validate(authengine=AuthEngineRule,
-          client=ClientRule,
-          vault=VaultInstanceRule)
-def vault_validate(authengine, client, vault, manager):
+@validate(client=ClientRule,
+          vault=VaultInstanceRule,
+          manager=ValereManagerRule)
+def vault_validate(client, vault, manager):
     """Validate the Deuce Vault by checking all blocks exist
 
-    :param authengine: instance of deuceclient.auth.Authentication
-                       to use for retrieving tokens
     :param client: instance of deuceclient.client.deuce
                    to use for interacting with the Deuce Service
     :param vault: instance of deuceclient.api.Vault for the
@@ -41,14 +40,12 @@ def vault_validate(authengine, client, vault, manager):
     return 0
 
 
-@validate(authengine=AuthEngineRule,
-          client=ClientRule,
-          vault=VaultInstanceRule)
-def vault_cleanup(authengine, client, vault, manager):
+@validate(client=ClientRule,
+          vault=VaultInstanceRule,
+          manager=ValereManagerRule)
+def vault_cleanup(client, vault, manager):
     """Cleanup the Deuce Vault by removing orphaned data
 
-    :param authengine: instance of deuceclient.auth.Authentication
-                       to use for retrieving tokens
     :param client: instance of deuceclient.client.deuce
                    to use for interacting with the Deuce Service
     :param vault: instance of deuceclient.api.Vault for the
