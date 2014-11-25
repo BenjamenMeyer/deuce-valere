@@ -120,8 +120,9 @@ class Manager(object):
     """
 
     @validate(marker_start=MetadataBlockIdRuleNoneOkay,
-              marker_end=MetadataBlockIdRuleNoneOkay)
-    def __init__(self, marker_start=None, marker_end=None):
+              marker_end=MetadataBlockIdRuleNoneOkay,
+              expire_age=ExpireAgeRuleNoneOkay)
+    def __init__(self, marker_start=None, marker_end=None, expire_age=None):
         """
         :param marker_start: the start of the range to use, inclusive,
                              may be None
@@ -145,6 +146,24 @@ class Manager(object):
             'start': marker_start,
             'end': marker_end
         }
+
+        if expire_age is None:
+            dt_max = datetime.datetime.max
+            dt_now = datetime.datetime.utcnow()
+            expire_age = dt_max - dt_now
+
+        self.__properties = {
+            'expired_age': expire_age
+        }
+
+    @property
+    def expire_age(self):
+        return self.__properties['expired_age']
+
+    @expire_age.setter
+    @validate(value=ExpireAgeRule)
+    def expire_age(self, value):
+        self.__properties['expired_age'] = value
 
     @property
     def start_block(self):

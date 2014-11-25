@@ -1,6 +1,8 @@
 """
 Deuce Valere - Common - Validation
 """
+import datetime
+
 from deuceclient.api import *
 from deuceclient.auth.base import AuthenticationBase
 from deuceclient.client.deuce import DeuceClient
@@ -22,6 +24,12 @@ def val_deuceclient_instance(value):
         raise ValidationFailed('invalid Deuce Client instance')
 
 
+@validation_function
+def val_expire_age(value):
+    if not isinstance(value, datetime.timedelta):
+        raise ValidationFailed('must be type datetime.timedelta')
+
+
 def _abort(error_code):
     abort_errors = {
         100: TypeError
@@ -30,3 +38,6 @@ def _abort(error_code):
 
 AuthEngineRule = Rule(val_authenticator_instance(), lambda: _abort(100))
 ClientRule = Rule(val_deuceclient_instance(), lambda: _abort(100))
+
+ExpireAgeRule = Rule(val_expire_age(), lambda: _abort(100))
+ExpireAgeRuleNoneOkay = Rule(val_expire_age(none_ok=True), lambda: _abort(100))

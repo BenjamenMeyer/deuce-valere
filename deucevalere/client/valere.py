@@ -1,6 +1,7 @@
 """
 Deuce Valere - Client - Valere
 """
+import datetime
 import logging
 
 from stoplight import validate
@@ -86,3 +87,13 @@ class ValereClient(object):
 
             if start_marker is None:
                 break
+
+    def validate_metadata(self, delete_older_than=datetime.datetime.max):
+        if self.manager.metadata.current is None:
+            self.get_block_list()
+
+        if len(self.manager.metadata.current) == 0:
+            self.get_block_list()
+
+        for block_id in self.manager.metadata.current:
+            block = self.client.HeadBlock(self.vault, block_id)
