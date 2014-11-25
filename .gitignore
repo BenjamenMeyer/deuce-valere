@@ -47,8 +47,15 @@ coverage.xml
 # Django stuff:
 *.log
 
+# Vim files
+*.sw?
+
 # Sphinx documentation
 docs/_build/
 
 # PyBuilder
 target/
+
+deucevalere/cover
+ChangeLog
+AUTHORS
