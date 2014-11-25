@@ -92,6 +92,7 @@ class ListManager(object):
         self.__name = name
         self.__current = None
         self.__expired = None
+        self.__deleted = None
 
     @property
     def name(self):
@@ -112,6 +113,14 @@ class ListManager(object):
     @expired.setter
     def expired(self, value):
         self.__expired = value
+
+    @property
+    def deleted(self):
+        return self.__deleted
+
+    @deleted.setter
+    def deleted(self, value):
+        self.__deleted = value
 
 
 class Manager(object):
