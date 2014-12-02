@@ -67,7 +67,7 @@ class TestValereClientBase(unittest.TestCase):
                                marker_end=manager_end)
         self.client = ValereClient(self.deuce_client, self.vault, self.manager)
 
-    def metadata_body_generator(self, uri):
+    def metadata_listing_generator(self, uri):
         def get_group(gg_start, gg_end):
             url_base = get_blocks_url(self.apihost,
                                       self.vault.vault_id)
@@ -118,13 +118,13 @@ class TestValereClientBase(unittest.TestCase):
         return get_group(start, end)
 
     def metadata_block_listing_success(self, request, uri, headers):
-        body, next_batch = self.metadata_body_generator(uri)
+        body, next_batch = self.metadata_listing_generator(uri)
         if next_batch is not None:
             headers.update({'x-next-batch': next_batch})
 
         return (200, headers, json.dumps(body))
 
-    def storage_body_generator(self, uri):
+    def storage_listing_generator(self, uri):
         def get_group(gg_start, gg_end):
             url_base = get_storage_blocks_url(self.apihost,
                                               self.vault.vault_id)
@@ -175,7 +175,7 @@ class TestValereClientBase(unittest.TestCase):
         return get_group(start, end)
 
     def storage_block_listing_success(self, request, uri, headers):
-        body, next_batch = self.storage_body_generator(uri)
+        body, next_batch = self.storage_listing_generator(uri)
         if next_batch is not None:
             headers.update({'x-next-batch': next_batch})
 
