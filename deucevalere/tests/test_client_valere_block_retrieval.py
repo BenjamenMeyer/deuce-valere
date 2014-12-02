@@ -1,5 +1,5 @@
 """
-Deuce Valere - Tests - Client - Valere
+Deuce Valere - Tests - Client - Valere - Block Retrieval
 """
 import json
 
@@ -14,6 +14,8 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
 
     def setUp(self):
         super().setUp()
+        self.project_id = create_project_name()
+        self.vault_id = create_vault_name()
         self.generate_blocks(count=100)
 
     def tearDown(self):
@@ -45,11 +47,12 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
 
     @httpretty.activate
     def test_get_metadata_block_list_with_end(self):
+        sorted_metadata_info = sorted(self.meta_data.keys())
 
         end_position = self.metadata_calculate_position()
 
         self.secondary_setup(manager_start=None,
-                             manager_end=self.meta_data[end_position])
+                             manager_end=sorted_metadata_info[end_position])
 
         def metadata_callback(request, uri, headers):
             return self.metadata_block_listing_success(request,
@@ -67,7 +70,7 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                          end_position)
 
         for block_id in self.meta_data:
-            if block_id < self.meta_data[end_position]:
+            if block_id < sorted_metadata_info[end_position]:
                 self.assertIn(block_id, self.manager.metadata.current)
             else:
                 self.assertNotIn(block_id, self.manager.metadata.current)
@@ -98,11 +101,12 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
 
     @httpretty.activate
     def test_get_storage_block_list_with_end(self):
+        sorted_metadata_info = sorted(self.meta_data.keys())
 
         end_position = self.metadata_calculate_position()
 
         self.secondary_setup(manager_start=None,
-                             manager_end=self.meta_data[end_position])
+                             manager_end=sorted_metadata_info[end_position])
 
         def storage_callback(request, uri, headers):
             return self.storage_block_listing_success(request,
@@ -120,7 +124,7 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                          end_position)
 
         for block_id in self.storage_data:
-            if block_id < self.meta_data[end_position]:
+            if block_id < sorted_metadata_info[end_position]:
                 self.assertIn(block_id, self.manager.storage.current)
             else:
                 self.assertNotIn(block_id, self.manager.storage.current)

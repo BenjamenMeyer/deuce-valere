@@ -2,12 +2,15 @@
 Deuce Valere - Client - Base Test Functionality
 """
 import json
+import re
 import unittest
 import urllib.parse
 import uuid
 
-from deuceclient.api import Vault
+from deuceclient.api import Vault, Block
 from deuceclient.client.deuce import DeuceClient
+from deuceclient.common.validation import METADATA_BLOCK_ID_REGEX
+from deuceclient.common.validation import STORAGE_BLOCK_ID_REGEX
 from deuceclient.tests import *
 import httpretty
 
@@ -27,6 +30,18 @@ class TestValereClientBase(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
+    def get_metadata_block_pattern_matcher(self):
+        base_url = get_blocks_url(self.apihost, self.vault.vault_id)
+        regex = '^{0:}/{1:}'.format(base_url,
+                                    METADATA_BLOCK_ID_REGEX.pattern[2:-2])
+        return re.compile(regex)
+
+    def get_storage_block_pattern_matcher(self):
+        base_url = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        regex = '^{0:}/{1:}'.format(base_url,
+                                    STORAGE_BLOCK_ID_REGEX.pattern[2:-2])
+        return re.compile(regex)
+
     def metadata_calculate_position(self, splitter=None):
         if splitter is None:
             splitter = self.data_splitter
@@ -41,19 +56,59 @@ class TestValereClientBase(unittest.TestCase):
 
     def generate_blocks(self, count):
         # Generate a list of metadata block ids - 100 blocks
-        self.meta_data = sorted(
-            [block[0] for block in create_blocks(block_count=count)]
-        )
+        # self.meta_data = sorted(
+        #     [block[0] for block in create_blocks(block_count=count)]
+        # )
+
+        def generate_ref_modified():
+            pass
+
+        self.meta_data = {block[0]: Block(self.project_id,
+                                          self.vault_id,
+                                          block_id=block[0],
+                                          data=block[1],
+                                          block_size=block[2],
+                                          ref_count=random.randint(0, 4),
+                                          block_orphaned=False,
+                                          ref_modified=generate_ref_modified()
+                                          )
+            for block in create_blocks(block_count=count)}
 
         # Generate a list of equivalent storage blocks
-        self.storage_data = sorted([
-            '{0}_{1}'.format(block_id, uuid.uuid4())
-            for block_id in self.meta_data
-        ])
+        self.storage_data = {}
+        for block_id in self.meta_data.keys():
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = self.meta_data[block_id].data
+            bs = self.meta_data[block_id].block_size
+            rc = random.randint(0, 4)
+            rmod = generate_ref_modified()
+
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=block_id,
+                                            data=bd,
+                                            block_size=bs,
+                                            ref_count=rc,
+                                            block_orphaned=False,
+                                            ref_modified=rmod)
+
+    def generate_orphaned_blocks(self, count):
+        raise NotImplemented('TBD - add orphaned storage blocks')
 
     def secondary_setup(self, manager_start, manager_end):
-        self.project_id = create_project_name()
-        self.vault_id = create_vault_name()
+        if not hasattr(self, 'project_id'):
+            self.project_id = None
+
+        if not hasattr(self, 'vault_id'):
+            self.vault_id = None
+
+        if self.project_id is None:
+            self.project_id = create_project_name()
+
+        if self.vault_id is None:
+            self.vault_id = create_vault_name()
+
         self.vault = Vault(self.project_id, self.vault_id)
         self.apihost = 'neo.the.one'
         self.authengine = FakeAuthEngine(userid='blue',
@@ -68,6 +123,8 @@ class TestValereClientBase(unittest.TestCase):
         self.client = ValereClient(self.deuce_client, self.vault, self.manager)
 
     def metadata_listing_generator(self, uri):
+        sorted_metadata_info = sorted(self.meta_data.keys())
+
         def get_group(gg_start, gg_end):
             url_base = get_blocks_url(self.apihost,
                                       self.vault.vault_id)
@@ -75,12 +132,12 @@ class TestValereClientBase(unittest.TestCase):
             url = None
             block_set = None
             if gg_start is not None:
-                block_set = self.meta_data[gg_start:gg_end]
+                block_set = sorted_metadata_info[gg_start:gg_end]
             else:
-                block_set = self.meta_data[:gg_end]
+                block_set = sorted_metadata_info[:gg_end]
 
             if gg_end is not None:
-                block_next = self.meta_data[gg_end]
+                block_next = sorted_metadata_info[gg_end]
 
                 url_params = urllib.parse.urlencode({'marker': block_next})
                 next_batch = '{0}?{1}'.format(url_base, url_params)
@@ -99,8 +156,9 @@ class TestValereClientBase(unittest.TestCase):
             marker = qs['marker'][0]
 
             new_start = 0
+
             for check_index in range(len(self.meta_data)):
-                if self.meta_data[check_index] >= marker:
+                if sorted_metadata_info[check_index] >= marker:
                     new_start = check_index
                     break
 
@@ -124,7 +182,24 @@ class TestValereClientBase(unittest.TestCase):
 
         return (200, headers, json.dumps(body))
 
+    def metadata_block_head_success(self, request, uri, headers):
+        parsed_url = urllib.parse.urlparse(uri)
+        url_path_parts = parsed_url.path.split('/')
+        requested_vault_id = url_path_parts[3]
+        requested_block_id = url_path_parts[-1]
+
+        if requested_vault_id != self.vault.vault_id:
+            return (404, headers, 'invalid vault id')
+
+        if requested_block_id in self.meta_data:
+            pass
+
+        else:
+            return (404, headers, 'invalid block id')
+
     def storage_listing_generator(self, uri):
+        sorted_storage_data_info = sorted(self.storage_data.keys())
+
         def get_group(gg_start, gg_end):
             url_base = get_storage_blocks_url(self.apihost,
                                               self.vault.vault_id)
@@ -132,12 +207,12 @@ class TestValereClientBase(unittest.TestCase):
             url = None
             block_set = None
             if gg_start is not None:
-                block_set = self.storage_data[gg_start:gg_end]
+                block_set = sorted_storage_data_info[gg_start:gg_end]
             else:
-                block_set = self.storage_data[:gg_end]
+                block_set = sorted_storage_data_info[:gg_end]
 
             if gg_end is not None:
-                block_next = self.storage_data[gg_end]
+                block_next = sorted_storage_data_info[gg_end]
 
                 url_params = urllib.parse.urlencode({'marker': block_next})
                 next_batch = '{0}?{1}'.format(url_base, url_params)
@@ -157,7 +232,7 @@ class TestValereClientBase(unittest.TestCase):
 
             new_start = 0
             for check_index in range(len(self.storage_data)):
-                if self.storage_data[check_index] >= marker:
+                if sorted_storage_data_info[check_index] >= marker:
                     new_start = check_index
                     break
 
