@@ -104,6 +104,13 @@ class TestValereClientBase(unittest.TestCase):
 
         return get_group(start, end)
 
+    def metadata_block_listing_success(self, request, uri, headers):
+        body, next_batch = self.metadata_body_generator(uri)
+        if next_batch is not None:
+            headers.update({'x-next-batch': next_batch})
+
+        return (200, headers, json.dumps(body))
+
     def storage_body_generator(self, uri):
         def get_group(gg_start, gg_end):
             url_base = get_storage_blocks_url(self.apihost,
@@ -153,3 +160,10 @@ class TestValereClientBase(unittest.TestCase):
             end = int(len(self.storage_data) / 3)
 
         return get_group(start, end)
+
+    def storage_block_listing_success(self, request, uri, headers):
+        body, next_batch = self.storage_body_generator(uri)
+        if next_batch is not None:
+            headers.update({'x-next-batch': next_batch})
+
+        return (200, headers, json.dumps(body))

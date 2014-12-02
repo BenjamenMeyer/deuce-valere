@@ -26,11 +26,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                              manager_end=None)
 
         def metadata_callback(request, uri, headers):
-            body, next_batch = self.metadata_body_generator(uri)
-            if next_batch is not None:
-                headers.update({'x-next-batch': next_batch})
-
-            return (200, headers, json.dumps(body))
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
 
         url = get_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -54,11 +52,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                              manager_end=self.meta_data[length])
 
         def metadata_callback(request, uri, headers):
-            body, next_batch = self.metadata_body_generator(uri)
-            if next_batch is not None:
-                headers.update({'x-next-batch': next_batch})
-
-            return (200, headers, json.dumps(body))
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
 
         url = get_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -83,11 +79,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                              manager_end=None)
 
         def storage_callback(request, uri, headers):
-            body, next_batch = self.storage_body_generator(uri)
-            if next_batch is not None:
-                headers.update({'x-next-batch': next_batch})
-
-            return (200, headers, json.dumps(body))
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
 
         url = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -111,11 +105,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
                              manager_end=self.meta_data[length])
 
         def storage_callback(request, uri, headers):
-            body, next_batch = self.storage_body_generator(uri)
-            if next_batch is not None:
-                headers.update({'x-next-batch': next_batch})
-
-            return (200, headers, json.dumps(body))
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
 
         url = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
