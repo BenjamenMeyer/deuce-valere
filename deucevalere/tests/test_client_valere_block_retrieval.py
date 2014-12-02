@@ -46,10 +46,10 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
     @httpretty.activate
     def test_get_metadata_block_list_with_end(self):
 
-        length = int(len(self.meta_data) / 3)
+        end_position = self.metadata_calculate_position()
 
         self.secondary_setup(manager_start=None,
-                             manager_end=self.meta_data[length])
+                             manager_end=self.meta_data[end_position])
 
         def metadata_callback(request, uri, headers):
             return self.metadata_block_listing_success(request,
@@ -64,10 +64,10 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.client.get_block_list()
 
         self.assertEqual(len(self.manager.metadata.current),
-                         length)
+                         end_position)
 
         for block_id in self.meta_data:
-            if block_id < self.meta_data[length]:
+            if block_id < self.meta_data[end_position]:
                 self.assertIn(block_id, self.manager.metadata.current)
             else:
                 self.assertNotIn(block_id, self.manager.metadata.current)
@@ -99,10 +99,10 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
     @httpretty.activate
     def test_get_storage_block_list_with_end(self):
 
-        length = int(len(self.meta_data) / 3)
+        end_position = self.metadata_calculate_position()
 
         self.secondary_setup(manager_start=None,
-                             manager_end=self.meta_data[length])
+                             manager_end=self.meta_data[end_position])
 
         def storage_callback(request, uri, headers):
             return self.storage_block_listing_success(request,
@@ -117,10 +117,10 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.client.get_storage_list()
 
         self.assertEqual(len(self.manager.storage.current),
-                         length)
+                         end_position)
 
         for block_id in self.storage_data:
-            if block_id < self.meta_data[length]:
+            if block_id < self.meta_data[end_position]:
                 self.assertIn(block_id, self.manager.storage.current)
             else:
                 self.assertNotIn(block_id, self.manager.storage.current)

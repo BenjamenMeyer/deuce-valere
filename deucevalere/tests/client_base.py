@@ -22,9 +22,22 @@ class TestValereClientBase(unittest.TestCase):
         super().setUp()
         self.meta_data = None
         self.storage_data = None
+        self.data_splitter = 3
 
     def tearDown(self):
         super().tearDown()
+
+    def metadata_calculate_position(self, splitter=None):
+        if splitter is None:
+            splitter = self.data_splitter
+
+        return int(len(self.meta_data) / splitter)
+
+    def storage_calculate_position(self, splitter=None):
+        if splitter is None:
+            splitter = self.data_splitter
+
+        return int(len(self.storage_data) / splitter)
 
     def generate_blocks(self, count):
         # Generate a list of metadata block ids - 100 blocks
@@ -93,14 +106,14 @@ class TestValereClientBase(unittest.TestCase):
 
             if new_start > start and new_start <= len(self.meta_data):
                 start = new_start
-                end = start + int(len(self.meta_data) / 3)
+                end = start + self.metadata_calculate_position()
 
             if end >= len(self.meta_data):
                 end = None
 
         else:
             start = None
-            end = int(len(self.meta_data) / 3)
+            end = self.metadata_calculate_position()
 
         return get_group(start, end)
 
@@ -150,14 +163,14 @@ class TestValereClientBase(unittest.TestCase):
 
             if new_start > start and new_start <= len(self.storage_data):
                 start = new_start
-                end = start + int(len(self.storage_data) / 3)
+                end = start + self.storage_calculate_position()
 
             if end >= len(self.storage_data):
                 end = None
 
         else:
             start = None
-            end = int(len(self.storage_data) / 3)
+            end = self.storage_calculate_position()
 
         return get_group(start, end)
 
