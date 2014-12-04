@@ -116,7 +116,8 @@ class ValereClient(object):
 
         Access each block through a HEAD operation
         Checks if the reference count is zero
-        For blocks with zero reference counts mark them as expired
+        For blocks with zero reference counts mark them as expired if they
+        pass the age specified by the manager
 
         Note: Expired blocks will remain in the current block list
         """
@@ -252,9 +253,10 @@ class ValereClient(object):
                     #       that the block received a reference count between
                     #       when it was deteremined not to have any and when
                     #       the cleanup tried to remove it.
-                    if self.client.DeleteBlock(self.vault,
-                                               self.vault.blocks[
-                                                   expired_block_id]):
+                    try:
+                        self.deuceclient.DeleteBlock(self.vault,
+                                                    self.vault.blocks[
+                                                        expired_block_id])
 
                         # The block was deleted, save it as being so
                         # This serves two purposes:
@@ -267,12 +269,14 @@ class ValereClient(object):
                                  .format(self.vault.project_id,
                                          self.vault.vault_id,
                                          expired_block_id))
-                    else:
-                        self.info('Project ID {0}, Vault {1} - '
-                                 'FAILED to Deleted Expired Block: {2}'
-                                 .format(self.vault.project_id,
-                                         self.vault.vault_id,
-                                         expired_block_id))
+                    except Exception as ex:
+                        self.log.info('Project ID {0}, Vault {1} - '
+                                      'FAILED to Deleted Expired Block '
+                                      '({2}): {3}'
+                                      .format(self.vault.project_id,
+                                              self.vault.vault_id,
+                                              expired_block_id,
+                                              str(ex)))
                 else:
                     self.log.info('Project ID {0}, Vault {1} - '
                              'Already Deleted Expired Block: {2}'
