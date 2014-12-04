@@ -111,7 +111,7 @@ class ValereClient(object):
             if start_marker is None:
                 break
 
-    def validate_metadata(self, delete_older_than=datetime.datetime.max):
+    def validate_metadata(self):
         """Validate a block
 
         Access each block through a HEAD operation
@@ -168,7 +168,7 @@ class ValereClient(object):
                 continue
 
             # Now check if the block has any references
-            if block.ref_count == 0:
+            if int(block.ref_count) == 0:
                 self.log.warn('Project ID {0}, Vault {1} - '
                          'Block {2} has no references'
                          .format(self.vault.project_id,
@@ -176,33 +176,31 @@ class ValereClient(object):
                                  block_id))
                 # Try to calculate the age of the block since it was
                 # last modified
-                block_age = None
-                try:
-                    block_age = datetime.datetime.utcnow() - \
-                        datetime.datetime.utcfromtimestamp(block.ref_modified)
-                    self.log.warn('Project ID {0}, Vault {1} - '
-                             'Block {2} has age {3}'
+
+                block_age = datetime.datetime.utcnow() - \
+                    datetime.datetime.utcfromtimestamp(block.ref_modified)
+                self.log.warn('Project ID {0}, Vault {1} - '
+                         'Block {2} has age {3}'
+                         .format(self.vault.project_id,
+                                 self.vault.vault_id,
+                                 block_id,
+                                 block_age))
+
+                # If the block age is beyond the threshold then mark it
+                # for deletion
+                if block_age > self.manager.expire_age:
+                    self.log.info('Project ID {0}, Vault {1} - '
+                             'Found Expired Block: {2}'
                              .format(self.vault.project_id,
                                      self.vault.vault_id,
-                                     block_id,
-                                     block_age))
+                                     block_id))
 
-                    # If the block age is beyond the threshold then mark it
-                    # for deletion
-                    if block_age > self.manager.expire_age:
-                        self.log.info('Project ID {0}, Vault {1} - '
-                                 'Found Expired Block: {2}'
-                                 .format(self.vault.project_id,
-                                         self.vault.vault_id,
-                                         block_id))
+                    # If we have already marked it for deletion then
+                    # do not add it a second time; try to keep the list
+                    # to a minimum
+                    if block_id not in self.manager.metadata.expired:
+                        self.manager.metadata.expired.append(block_id)
 
-                        # If we have already marked it for deletion then
-                        # do not add it a second time; try to keep the list
-                        # to a minimum
-                        if block_id not in self.manager.metadata.expired:
-                            self.manager.metadata.expired.append(block_id)
-                except:
-                    pass
             else:
                 self.log.warn('Project ID {0}, Vault {1} - '
                          'Block {2} has {3} references'

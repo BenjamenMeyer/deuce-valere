@@ -55,19 +55,24 @@ class TestValereClientBase(unittest.TestCase):
 
         return int(len(self.storage_data) / splitter)
 
+    @staticmethod
+    def calculate_ref_modified(base=None, days=0, hours=0, mins=0, secs=0):
+        date_base = datetime.datetime.utcnow() if base is None else base
+        modified = (date_base - datetime.timedelta(days=days,
+                                                   hours=hours,
+                                                   minutes=mins,
+                                                   seconds=secs))
+        return int(modified.timestamp())
+
     def generate_blocks(self, count):
 
         def generate_ref_modified():
-            date_base = datetime.datetime.utcnow()
-            date_offset_days = random.randint(0, 60)
-            date_offset_hours = random.randint(0, 23)
-            date_offset_mins = random.randint(0, 59)
-            date_offset_secs = random.randint(0, 59)
-
-            return (date_base - datetime.timedelta(days=date_offset_days,
-                                                   hours=date_offset_hours,
-                                                   minutes=date_offset_mins,
-                                                   seconds=date_offset_secs))
+            return TestValereClientBase.calculate_ref_modified(
+                days=random.randint(0, 60),
+                hours=random.randint(0, 23),
+                mins=random.randint(0, 59),
+                secs=random.randint(0, 59)
+            )
 
         self.meta_data = {block[0]: Block(self.project_id,
                                           self.vault_id,
