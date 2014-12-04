@@ -1,6 +1,7 @@
 """
 Deuce Valere - Client - Base Test Functionality
 """
+import datetime
 import json
 import re
 import unittest
@@ -32,14 +33,14 @@ class TestValereClientBase(unittest.TestCase):
 
     def get_metadata_block_pattern_matcher(self):
         base_url = get_blocks_url(self.apihost, self.vault.vault_id)
-        regex = '^{0:}/{1:}'.format(base_url,
-                                    METADATA_BLOCK_ID_REGEX.pattern[2:-2])
+        regex = '{0:}/{1:}'.format(base_url[8:],
+                                   METADATA_BLOCK_ID_REGEX.pattern[2:-2])
         return re.compile(regex)
 
     def get_storage_block_pattern_matcher(self):
         base_url = get_storage_blocks_url(self.apihost, self.vault.vault_id)
-        regex = '^{0:}/{1:}'.format(base_url,
-                                    STORAGE_BLOCK_ID_REGEX.pattern[2:-2])
+        regex = '{0:}/{1:}'.format(base_url[8:],
+                                   STORAGE_BLOCK_ID_REGEX.pattern)
         return re.compile(regex)
 
     def metadata_calculate_position(self, splitter=None):
@@ -55,13 +56,18 @@ class TestValereClientBase(unittest.TestCase):
         return int(len(self.storage_data) / splitter)
 
     def generate_blocks(self, count):
-        # Generate a list of metadata block ids - 100 blocks
-        # self.meta_data = sorted(
-        #     [block[0] for block in create_blocks(block_count=count)]
-        # )
 
         def generate_ref_modified():
-            pass
+            date_base = datetime.datetime.utcnow()
+            date_offset_days = random.randint(0, 60)
+            date_offset_hours = random.randint(0, 23)
+            date_offset_mins = random.randint(0, 59)
+            date_offset_secs = random.randint(0, 59)
+
+            return (date_base - datetime.timedelta(days=date_offset_days,
+                                                   hours=date_offset_hours,
+                                                   minutes=date_offset_mins,
+                                                   seconds=date_offset_secs))
 
         self.meta_data = {block[0]: Block(self.project_id,
                                           self.vault_id,
@@ -83,6 +89,10 @@ class TestValereClientBase(unittest.TestCase):
             rc = random.randint(0, 4)
             rmod = generate_ref_modified()
 
+            # Update Metadata
+            self.meta_data[block_id].storage_id = sbid
+
+            # Insert into Storage
             self.storage_data[sbid] = Block(self.project_id,
                                             self.vault_id,
                                             storage_id=sbid,
@@ -192,7 +202,14 @@ class TestValereClientBase(unittest.TestCase):
             return (404, headers, 'invalid vault id')
 
         if requested_block_id in self.meta_data:
-            pass
+
+            bid = requested_block_id
+            headers['X-Block-Reference-Count'] = self.meta_data[bid].ref_count
+            headers['X-Ref-Modified'] = self.meta_data[bid].ref_modified
+            headers['X-Storage-ID'] = self.meta_data[bid].storage_id
+            headers['X-Block-ID'] = self.meta_data[bid].block_id
+            headers['X-Block-Size'] = self.meta_data[bid].block_size
+            return (204, headers, '')
 
         else:
             return (404, headers, 'invalid block id')

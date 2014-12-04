@@ -10,6 +10,7 @@ from deucevalere.tests import *
 from deucevalere.tests.client_base import TestValereClientBase
 
 
+@httpretty.activate
 class TestValereClientBlockRetrieval(TestValereClientBase):
 
     def setUp(self):
@@ -21,7 +22,6 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
     def tearDown(self):
         super().tearDown()
 
-    @httpretty.activate
     def test_get_metadata_block_list(self):
 
         self.secondary_setup(manager_start=None,
@@ -42,10 +42,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.assertEqual(len(self.manager.metadata.current),
                          len(self.meta_data))
 
-        for block_id in self.meta_data:
+        for block_id in self.meta_data.keys():
             self.assertIn(block_id, self.manager.metadata.current)
 
-    @httpretty.activate
     def test_get_metadata_block_list_with_end(self):
         sorted_metadata_info = sorted(self.meta_data.keys())
 
@@ -69,13 +68,12 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.assertEqual(len(self.manager.metadata.current),
                          end_position)
 
-        for block_id in self.meta_data:
+        for block_id in self.meta_data.keys():
             if block_id < sorted_metadata_info[end_position]:
                 self.assertIn(block_id, self.manager.metadata.current)
             else:
                 self.assertNotIn(block_id, self.manager.metadata.current)
 
-    @httpretty.activate
     def test_get_storage_block_list(self):
 
         self.secondary_setup(manager_start=None,
@@ -96,10 +94,9 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.assertEqual(len(self.manager.storage.current),
                          len(self.storage_data))
 
-        for block_id in self.storage_data:
+        for block_id in self.storage_data.keys():
             self.assertIn(block_id, self.manager.storage.current)
 
-    @httpretty.activate
     def test_get_storage_block_list_with_end(self):
         sorted_metadata_info = sorted(self.meta_data.keys())
 
@@ -123,7 +120,7 @@ class TestValereClientBlockRetrieval(TestValereClientBase):
         self.assertEqual(len(self.manager.storage.current),
                          end_position)
 
-        for block_id in self.storage_data:
+        for block_id in self.storage_data.keys():
             if block_id < sorted_metadata_info[end_position]:
                 self.assertIn(block_id, self.manager.storage.current)
             else:

@@ -4,6 +4,7 @@ Deuce Valere - Client - Valere
 import datetime
 import logging
 
+from deuceclient.api import Block
 from stoplight import validate
 
 from deucevalere.common.validation import *
@@ -19,17 +20,16 @@ class ValereClient(object):
         self.deuceclient = deuce_client
         self.vault = vault
         self.manager = manager
+        self.log = logging.getLogger(__name__)
 
     def get_block_list(self):
         """Fill the Manager's list of current blocks
         """
-        log = logging.getLogger(__name__)
-
         self.manager.metadata.current = []
 
         marker = self.manager.start_block
 
-        log.info('Project ID: {0}, Vault {1} - '
+        self.log.info('Project ID: {0}, Vault {1} - '
                  'Searching for Blocks [{2}, {3})'
                  .format(self.vault.project_id,
                          self.vault.vault_id,
@@ -48,7 +48,7 @@ class ValereClient(object):
                     self.manager.metadata.current.append(block_id)
 
             marker = self.vault.blocks.marker
-            log.debug('Next Marker: {0}'.format(marker))
+            self.log.debug('Next Marker: {0}'.format(marker))
 
             if marker is None:
                 break
@@ -79,8 +79,6 @@ class ValereClient(object):
     def get_storage_list(self):
         """Fill the manager's list of current storage blocks
         """
-        log = logging.getLogger(__name__)
-
         self.manager.storage.current = []
 
         start_marker = ValereClient._convert_metadata_id_to_storage_id(
@@ -88,7 +86,7 @@ class ValereClient(object):
         end_marker = ValereClient._convert_metadata_id_to_storage_id(
             self.manager.end_block) if self.manager.end_block else None
 
-        log.info('Project ID: {0}, Vault {1} - '
+        self.log.info('Project ID: {0}, Vault {1} - '
                  'Searching for Storage Blocks [{2}, {3})'
                  .format(self.vault.project_id,
                          self.vault.vault_id,
@@ -108,7 +106,7 @@ class ValereClient(object):
                     self.manager.storage.current.append(block_id)
 
             start_marker = self.vault.storageblocks.marker
-            log.debug('Next Marker: {0}'.format(start_marker))
+            self.log.debug('Next Marker: {0}'.format(start_marker))
 
             if start_marker is None:
                 break
@@ -135,29 +133,43 @@ class ValereClient(object):
 
         # Loop over any known blocks and validate them
         for block_id in self.manager.metadata.current:
-            log.debug('Project ID {0}, Vault {1} - '
+            self.log.debug('Project ID {0}, Vault {1} - '
                      'Validating Block: {2}'
                      .format(self.vault.project_id,
                              self.vault.vault_id,
                              block_id))
 
-            block = None
+            block = Block(self.vault.project_id,
+                          self.vault.vault_id,
+                          block_id=block_id)
             try:
                 # Access the block so that Deuce validates it all internally
-                block = self.client.HeadBlock(self.vault, block_id)
+                block = self.deuceclient.HeadBlock(self.vault, block)
 
-            except:
+            except Exception as ex:
                 # if there was a problem just mark the block as None so it
                 # get ignored for this iteration of the loop
+                self.log.warn('Project ID {0}, Vault {1} - '
+                         'Block {2} error heading block ({3}): {4}'
+                         .format(self.vault.project_id,
+                                 self.vault.vault_id,
+                                 block_id,
+                                 type(ex),
+                                 str(ex)))
                 block = None
 
             # if there was a problem then go to the next block_id
             if block is None:
+                self.log.warn('Project ID {0}, Vault {1} - '
+                         'Block {2} no block data to analyze'
+                         .format(self.vault.project_id,
+                                 self.vault.vault_id,
+                                 block_id))
                 continue
 
             # Now check if the block has any references
             if block.ref_count == 0:
-                log.warn('Project ID {0}, Vault {1} - '
+                self.log.warn('Project ID {0}, Vault {1} - '
                          'Block {2} has no references'
                          .format(self.vault.project_id,
                                  self.vault.vault_id,
@@ -168,7 +180,7 @@ class ValereClient(object):
                 try:
                     block_age = datetime.datetime.utcnow() - \
                         datetime.datetime.utcfromtimestamp(block.ref_modified)
-                    log.warn('Project ID {0}, Vault {1} - '
+                    self.log.warn('Project ID {0}, Vault {1} - '
                              'Block {2} has age {3}'
                              .format(self.vault.project_id,
                                      self.vault.vault_id,
@@ -178,7 +190,7 @@ class ValereClient(object):
                     # If the block age is beyond the threshold then mark it
                     # for deletion
                     if block_age > self.manager.expire_age:
-                        log.info('Project ID {0}, Vault {1} - '
+                        self.log.info('Project ID {0}, Vault {1} - '
                                  'Found Expired Block: {2}'
                                  .format(self.vault.project_id,
                                          self.vault.vault_id,
@@ -191,6 +203,13 @@ class ValereClient(object):
                             self.manager.metadata.expired.append(block_id)
                 except:
                     pass
+            else:
+                self.log.warn('Project ID {0}, Vault {1} - '
+                         'Block {2} has {3} references'
+                         .format(self.vault.project_id,
+                                 self.vault.vault_id,
+                                 block_id,
+                                 block.ref_count))
 
     def cleanup_expired_blocks(self):
         """Delete expired blocks
@@ -224,7 +243,7 @@ class ValereClient(object):
                 if expired_block_id not in self.manager.metadata.deleted:
 
                     # Log that we are going to delete the block
-                    log.info('Project ID {0}, Vault {1} - '
+                    self.log.info('Project ID {0}, Vault {1} - '
                              'Deleting Expired Block: {2}'
                              .format(self.vault.project_id,
                                      self.vault.vault_id,
@@ -245,19 +264,19 @@ class ValereClient(object):
                         #   2. Do not mutate the expired block list while it
                         #      is being traversed; it'll get cleaned up later
                         self.manager.metadata.deleted.append(expired_block_id)
-                        log.info('Project ID {0}, Vault {1} - '
+                        self.log.info('Project ID {0}, Vault {1} - '
                                  'Successfully Deleted Expired Block: {2}'
                                  .format(self.vault.project_id,
                                          self.vault.vault_id,
                                          expired_block_id))
                     else:
-                        log.info('Project ID {0}, Vault {1} - '
+                        self.info('Project ID {0}, Vault {1} - '
                                  'FAILED to Deleted Expired Block: {2}'
                                  .format(self.vault.project_id,
                                          self.vault.vault_id,
                                          expired_block_id))
                 else:
-                    log.info('Project ID {0}, Vault {1} - '
+                    self.log.info('Project ID {0}, Vault {1} - '
                              'Already Deleted Expired Block: {2}'
                              .format(self.vault.project_id,
                                      self.vault.vault_id,
