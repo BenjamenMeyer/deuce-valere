@@ -309,7 +309,10 @@ class ValereClient(object):
                     if block_id in self.manager.metadata.expired:
                         self.log.debug('Project ID {0}, Vault {1} - '
                                        'block {2} expired, not '
-                                       'cross-referencing')
+                                       'cross-referencing'
+                                       .format(self.vault.project_id,
+                                               self.vault.vault_id,
+                                               block_id))
                         continue
 
                 # Skip the block if it was deleted
@@ -317,11 +320,20 @@ class ValereClient(object):
                     if block_id in self.manager.metadata.deleted:
                         self.log.debug('Project ID {0}, Vault {1} - '
                                        'block {2} deleted, not '
-                                       'cross-referencing')
+                                       'cross-referencing'
+                                       .format(self.vault.project_id,
+                                               self.vault.vault_id,
+                                               block_id))
                         continue
 
                 # lookup the storage id
                 storage_id = self.vault.blocks[block_id].storage_id
+                self.log.debug('Project ID {0}, Vault {1} - '
+                               'Mapping Storage ID {2} to Block ID {3}'
+                               .format(self.vault.project_id,
+                                       self.vault.vault_id,
+                                       storage_id,
+                                       block_id))
 
                 # Add it to the cross-reference dict
                 self.manager.cross_reference[storage_id] = block_id
