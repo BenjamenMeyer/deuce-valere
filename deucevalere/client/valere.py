@@ -541,7 +541,7 @@ class ValereClient(object):
             # Actually deleted
             for deleted_block_id in self.manager.storage.deleted:
                 while deleted_block_id in self.manager.storage.orphaned:
-                    self.manager.storaged.orphaned.remove(deleted_block_id)
+                    self.manager.storage.orphaned.remove(deleted_block_id)
         else:
             raise RuntimeError('No orphaned blocks to remove.'
                                'Please run validate_storage() '

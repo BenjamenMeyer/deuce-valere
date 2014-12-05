@@ -28,6 +28,39 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
     def tearDown(self):
         super().tearDown()
 
+    def test_validate_storage_with_head_failure(self):
+        """Basic Validate Storage Test
+
+            Note: "orphaned" data is only what was deleted
+                  this is just due to how the test is structured.
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        def storage_head_callback(request, uri, headers):
+            return (404, headers, 'mock failure')
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_head_callback)
+
+        self.assertIsNone(self.manager.storage.orphaned)
+        self.client.validate_storage_with_head()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+
+        self.assertEqual(0,
+                         len(self.manager.storage.orphaned))
+
     def test_validate_storage_with_head_no_orphaned_blocks(self):
         """Basic Validate Storage Test
 
@@ -43,7 +76,9 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
                                                       headers)
 
         def storage_head_callback(request, uri, headers):
-            return self.storage_head
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
 
         surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -113,7 +148,9 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
                                                       headers)
 
         def storage_head_callback(request, uri, headers):
-            return self.storage_head
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
 
         surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -148,7 +185,9 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
                                                       headers)
 
         def storage_head_callback(request, uri, headers):
-            return self.storage_head
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
 
         surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,
@@ -180,7 +219,9 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
             return (200, headers, json.dumps([]))
 
         def storage_head_callback(request, uri, headers):
-            return self.storage_head
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
 
         surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
         httpretty.register_uri(httpretty.GET,

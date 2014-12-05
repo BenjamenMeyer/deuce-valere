@@ -111,32 +111,54 @@ class TestValereClientBase(unittest.TestCase):
 
     def generate_orphaned_blocks(self, count):
 
-        distribution = count % len(self.meta_data)
+        def make_orphaned_storage_block(block_id):
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = self.meta_data[block_id].data
+            bs = self.meta_data[block_id].block_size
+            rc = random.randint(0, 4)
+            rmod = generate_ref_modified()
+
+            # Update Metadata
+            self.meta_data[block_id].storage_id = sbid
+
+            # Insert into Storage
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=None,
+                                            data=bd,
+                                            block_size=bs,
+                                            ref_count=rc,
+                                            block_orphaned=True,
+                                            ref_modified=rmod,
+                                            block_type='storage')
+
+        # This creates an equal distribution for
+        # what is divisible:
+        #   20 blocks + 20 orphaned -> 1 block each
+        #   20 blocks + 15 orphaned -> 0 blocks each
+        #   20 blocks + 30 orphaned -> 1 block each
+        distribution = count // len(self.meta_data)
+
+        # since the number may not be wholly divisible
+        # (f.e the 20/30 example above) then we have to
+        # add an extra
+        extra_block = count % len(self.meta_data)
 
         total_orphaned = 0
         for block_id in self.meta_data.keys():
             for _ in range(distribution):
                 if total_orphaned < count:
-                    sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
-                    bd = self.meta_data[block_id].data
-                    bs = self.meta_data[block_id].block_size
-                    rc = random.randint(0, 4)
-                    rmod = generate_ref_modified()
+                    make_orphaned_storage_block(block_id)
+                total_orphaned = total_orphaned + 1
 
-                    # Update Metadata
-                    self.meta_data[block_id].storage_id = sbid
-
-                    # Insert into Storage
-                    self.storage_data[sbid] = Block(self.project_id,
-                                                    self.vault_id,
-                                                    storage_id=sbid,
-                                                    block_id=None,
-                                                    data=bd,
-                                                    block_size=bs,
-                                                    ref_count=rc,
-                                                    block_orphaned=True,
-                                                    ref_modified=rmod,
-                                                    block_type='storage')
+            if extra_block:
+                make_orphaned_storage_block(block_id)
+                # so that the extra block gets even
+                # distributed as well without affecting
+                # the primary distribution of blocks as
+                # would happen if this was a simple boolean value
+                extra_block = extra_block - 1
                 total_orphaned = total_orphaned + 1
 
     def secondary_setup(self, manager_start, manager_end):
