@@ -11,6 +11,7 @@ import httpretty.compat
 
 from deucevalere.tests import *
 from deucevalere.tests.client_base import TestValereClientBase
+from deucevalere.tests.client_base import calculate_ref_modified
 
 
 @httpretty.activate
@@ -76,7 +77,7 @@ class TestValereClientValidateStorage(TestValereClientBase):
             list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = TestValereClientBase.\
+            self.meta_data[key].ref_modified = \
                 calculate_ref_modified(base=base_age_date,
                                        days=0, hours=0, mins=1, secs=0)
 
@@ -154,7 +155,7 @@ class TestValereClientValidateStorage(TestValereClientBase):
             list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = TestValereClientBase.\
+            self.meta_data[key].ref_modified = \
                 calculate_ref_modified(base=base_age_date,
                                        days=0, hours=0, mins=1, secs=0)
 
@@ -230,7 +231,7 @@ class TestValereClientValidateStorage(TestValereClientBase):
             list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = TestValereClientBase.\
+            self.meta_data[key].ref_modified = \
                 calculate_ref_modified(base=base_age_date,
                                        days=0, hours=0, mins=1, secs=0)
 
@@ -313,7 +314,7 @@ class TestValereClientValidateStorage(TestValereClientBase):
             list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = TestValereClientBase.\
+            self.meta_data[key].ref_modified = \
                 calculate_ref_modified(base=base_age_date,
                                        days=0, hours=0, mins=1, secs=0)
 
