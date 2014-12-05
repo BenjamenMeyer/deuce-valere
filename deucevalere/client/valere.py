@@ -347,6 +347,7 @@ class ValereClient(object):
         This implements the short version where we only operate on the
         listing of the storage blocks.
         """
+
         if self.manager.storage.current is None:
             self.get_storage_list()
 
@@ -360,7 +361,7 @@ class ValereClient(object):
         #   1. We do not have to look at self.vault.blocks every time
         #   2. We do not need to rely on the format of the storage block id to
         #      determine the metadata block id
-        self.build_cross_reference()
+        self.build_cross_references()
 
         if len(self.manager.cross_reference) == 0:
             self.log.warn('Project ID {0}, Vault {1} - no cross-references '
