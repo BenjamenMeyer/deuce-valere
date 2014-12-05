@@ -6,6 +6,10 @@ import unittest
 from deucevalere.api.auth import baseauth
 
 
+def minmax(a, b):
+    return max(min(a, b), b)
+
+
 class FakeAuthEngine(baseauth.AuthenticationBase):
 
     def __init__(self, *args, **kwargs):

@@ -408,14 +408,10 @@ class ValereClient(object):
                                    self.vault.vault_id,
                                    storage_id))
             try:
-                lookup_block = Block(self.vault.project_id,
-                                     self.vault.vault_id,
-                                     block_id=None,
-                                     storage_id=storage_id,
-                                     block_type='storage')
-
                 block = self.deuceclient.HeadBlockStorage(self.vault,
-                                                          lookup_block)
+                                                          self.vault.
+                                                          storageblocks[
+                                                              storage_id])
             except Exception as ex:
                 # if there was a problem just mark the block as None so it
                 # get ignored for this iteration of the loop
