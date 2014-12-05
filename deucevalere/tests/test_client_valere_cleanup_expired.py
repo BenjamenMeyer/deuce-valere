@@ -13,6 +13,10 @@ from deucevalere.tests import *
 from deucevalere.tests.client_base import TestValereClientBase
 
 
+def minmax(a, b):
+    return max(min(a, b), b)
+
+
 @httpretty.activate
 class TestValereClientCleanupExpired(TestValereClientBase):
 
@@ -71,13 +75,10 @@ class TestValereClientCleanupExpired(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        def __min_max(a, b):
-            return max(min(a, b), b)
-
         base_age_date = datetime.datetime.utcnow()
 
         key_set = sorted(
-            list(self.meta_data.keys()))[0:__min_max(len(self.meta_data), 10)]
+            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
             self.meta_data[key].ref_modified = TestValereClientBase.\
@@ -134,15 +135,12 @@ class TestValereClientCleanupExpired(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        def __min_max(a, b):
-            return max(min(a, b), b)
-
         base_age_date = datetime.datetime.utcnow()
 
         self.manager.metadata.deleted = []
 
         key_set = sorted(
-            list(self.meta_data.keys()))[0:__min_max(len(self.meta_data), 10)]
+            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
             self.meta_data[key].ref_modified = TestValereClientBase.\
@@ -199,13 +197,10 @@ class TestValereClientCleanupExpired(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        def __min_max(a, b):
-            return max(min(a, b), b)
-
         base_age_date = datetime.datetime.utcnow()
 
         key_set = sorted(
-            list(self.meta_data.keys()))[0:__min_max(len(self.meta_data), 10)]
+            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
         for key in key_set:
             self.meta_data[key].ref_count = 0
             self.meta_data[key].ref_modified = TestValereClientBase.\
