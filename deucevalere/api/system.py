@@ -93,6 +93,7 @@ class ListManager(object):
         self.__current = None
         self.__expired = None
         self.__deleted = None
+        self.__orphaned = None
 
     @property
     def name(self):
@@ -122,6 +123,14 @@ class ListManager(object):
     def deleted(self, value):
         self.__deleted = value
 
+    @property
+    def orphaned(self):
+        return self.__orphaned
+
+    @orphaned.setter
+    def orphaned(self, value):
+        self.__orphaned = value
+
 
 class Manager(object):
     """
@@ -149,7 +158,8 @@ class Manager(object):
         }
         self.__lists = {
             'metadata': ListManager('metadata'),
-            'storage': ListManager('storage')
+            'storage': ListManager('storage'),
+            'xreference': {}
         }
         self.__markers = {
             'start': marker_start,
@@ -209,3 +219,7 @@ class Manager(object):
     @property
     def storage(self):
         return self.__lists['storage']
+
+    @property
+    def cross_reference(self):
+        return self.__lists['xreference']

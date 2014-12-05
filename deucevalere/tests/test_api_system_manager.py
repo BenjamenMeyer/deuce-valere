@@ -28,6 +28,7 @@ class DeuceValereApiSystemManagerTest(unittest.TestCase):
         self.assertIsInstance(manager.orphaned_counter, CounterManager)
         self.assertIsInstance(manager.metadata, ListManager)
         self.assertIsInstance(manager.storage, ListManager)
+        self.assertIsInstance(manager.cross_reference, dict)
         self.assertIsInstance(manager.expire_age, datetime.timedelta)
 
     def test_create_cases(self):
