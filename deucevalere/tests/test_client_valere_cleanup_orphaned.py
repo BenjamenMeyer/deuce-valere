@@ -7,7 +7,6 @@ import mock
 
 from deuceclient.tests import *
 import httpretty
-import httpretty.compat
 
 from deucevalere.tests import *
 from deucevalere.tests.client_base import TestValereClientBase

@@ -32,14 +32,8 @@ class TestConvenienceFunctions(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
-    def test_validation(self):
-        self.assertEqual(vault_validate(self.client,
-                                        self.vault,
-                                        self.manager),
-                         0)
-
-    def test_cleanup(self):
-        self.assertEqual(vault_cleanup(self.client,
-                                       self.vault,
-                                       self.manager),
-                         0)
+    # def test_cleanup(self):
+        # self.assertEqual(vault_cleanup(self.client,
+        #                               self.vault,
+        #                               self.manager),
+        #                 0)

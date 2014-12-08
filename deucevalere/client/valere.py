@@ -291,17 +291,25 @@ class ValereClient(object):
             raise RuntimeError('No expired blocks to remove.'
                                'Please run validate_metadata() first.')
 
-    def build_cross_references(self):
+    def build_cross_references(self, skip_expired=False):
         """Build a cross reference look-up for the metadata and storage ids
 
         Primary purpose is to have a quick way to do a reverse lookup of
         storage ids to determine validity based on the information we
         already have.
+
+        :param skip_expired: boolean value for whether or not to include the
+                             expired metadata blocks in the cross reference
+                             data. Default is False which removes them from
+                             the cross reference data.
         """
 
         if self.manager.metadata.current is not None:
             check_expired = self.manager.metadata.expired is not None
             check_deleted = self.manager.metadata.deleted is not None
+
+            if skip_expired:
+                check_expired = False
 
             for block_id in self.manager.metadata.current:
                 # Skip the block if it was expired
@@ -341,11 +349,23 @@ class ValereClient(object):
         else:
             self.log.info('No blocks to build cross-reference for')
 
-    def validate_storage(self):
+    def validate_storage(self, skip_expired=False):
         """Check storage for orphaned blocks
 
         This implements the short version where we only operate on the
         listing of the storage blocks.
+
+        :param skip_expired: Parameter to call to build_cross_references().
+                             See build_cross_references() for details.
+
+        Note: In some cases it may be advantageous to include the expired
+              metadata blocks in the cross-reference data in order to keep
+              their associated storage blocks from incorrectly being
+              detected as orphaned blocks. This is primarily due to an
+              order of operations issue when validating both metadata and
+              storage prior to performing the actual block deletions. In
+              these instances, set skip_expired to True to avoid improper
+              detection of orphaned blocks that are not really orphaned.
         """
 
         if self.manager.storage.current is None:
@@ -361,7 +381,7 @@ class ValereClient(object):
         #   1. We do not have to look at self.vault.blocks every time
         #   2. We do not need to rely on the format of the storage block id to
         #      determine the metadata block id
-        self.build_cross_references()
+        self.build_cross_references(skip_expired)
 
         if len(self.manager.cross_reference) == 0:
             self.log.warn('Project ID {0}, Vault {1} - no cross-references '
