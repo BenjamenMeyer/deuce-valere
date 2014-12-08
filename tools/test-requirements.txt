@@ -1,6 +1,7 @@
 coverage
 ddt
-httpretty
+# httpretty
+-e git+https://github.com/BenjamenMeyer/HTTPretty.git@fixes#egg=httpretty_fixed
 mock
 nose
 nose-exclude
