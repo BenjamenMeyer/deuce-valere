@@ -1,10 +1,6 @@
 """
 Deuce Valere - Tests - Function - Vault Validation
 """
-import functools
-import json
-import mock
-
 import ddt
 from deuceclient.tests import *
 import httpretty
@@ -12,7 +8,6 @@ import httpretty
 from deucevalere import vault_validate
 from deucevalere.tests import *
 from deucevalere.tests.client_base import TestValereClientBase
-from deucevalere.tests.client_base import calculate_ref_modified
 
 
 @ddt.ddt
