@@ -20,6 +20,24 @@ from deucevalere.client.valere import ValereClient
 from deucevalere.tests import *
 
 
+def calculate_ref_modified(base=None, days=0, hours=0, mins=0, secs=0):
+    date_base = datetime.datetime.utcnow() if base is None else base
+    modified = (date_base - datetime.timedelta(days=days,
+                                               hours=hours,
+                                               minutes=mins,
+                                               seconds=secs))
+    return int(modified.timestamp())
+
+
+def generate_ref_modified():
+    return calculate_ref_modified(
+        days=random.randint(0, 60),
+        hours=random.randint(0, 23),
+        mins=random.randint(0, 59),
+        secs=random.randint(0, 59)
+    )
+
+
 class TestValereClientBase(unittest.TestCase):
 
     def setUp(self):
@@ -55,24 +73,7 @@ class TestValereClientBase(unittest.TestCase):
 
         return int(len(self.storage_data) / splitter)
 
-    @staticmethod
-    def calculate_ref_modified(base=None, days=0, hours=0, mins=0, secs=0):
-        date_base = datetime.datetime.utcnow() if base is None else base
-        modified = (date_base - datetime.timedelta(days=days,
-                                                   hours=hours,
-                                                   minutes=mins,
-                                                   seconds=secs))
-        return int(modified.timestamp())
-
     def generate_blocks(self, count):
-
-        def generate_ref_modified():
-            return TestValereClientBase.calculate_ref_modified(
-                days=random.randint(0, 60),
-                hours=random.randint(0, 23),
-                mins=random.randint(0, 59),
-                secs=random.randint(0, 59)
-            )
 
         self.meta_data = {block[0]: Block(self.project_id,
                                           self.vault_id,
@@ -109,7 +110,56 @@ class TestValereClientBase(unittest.TestCase):
                                             ref_modified=rmod)
 
     def generate_orphaned_blocks(self, count):
-        raise NotImplemented('TBD - add orphaned storage blocks')
+
+        def make_orphaned_storage_block(block_id):
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = self.meta_data[block_id].data
+            bs = self.meta_data[block_id].block_size
+            rc = random.randint(0, 4)
+            rmod = generate_ref_modified()
+
+            # Update Metadata
+            self.meta_data[block_id].storage_id = sbid
+
+            # Insert into Storage
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=None,
+                                            data=bd,
+                                            block_size=bs,
+                                            ref_count=rc,
+                                            block_orphaned=True,
+                                            ref_modified=rmod,
+                                            block_type='storage')
+
+        # This creates an equal distribution for
+        # what is divisible:
+        #   20 blocks + 20 orphaned -> 1 block each
+        #   20 blocks + 15 orphaned -> 0 blocks each
+        #   20 blocks + 30 orphaned -> 1 block each
+        distribution = count // len(self.meta_data)
+
+        # since the number may not be wholly divisible
+        # (f.e the 20/30 example above) then we have to
+        # add an extra
+        extra_block = count % len(self.meta_data)
+
+        total_orphaned = 0
+        for block_id in self.meta_data.keys():
+            for _ in range(distribution):
+                if total_orphaned < count:
+                    make_orphaned_storage_block(block_id)
+                total_orphaned = total_orphaned + 1
+
+            if extra_block:
+                make_orphaned_storage_block(block_id)
+                # so that the extra block gets even
+                # distributed as well without affecting
+                # the primary distribution of blocks as
+                # would happen if this was a simple boolean value
+                extra_block = extra_block - 1
+                total_orphaned = total_orphaned + 1
 
     def secondary_setup(self, manager_start, manager_end):
         if not hasattr(self, 'project_id'):
@@ -277,3 +327,32 @@ class TestValereClientBase(unittest.TestCase):
             headers.update({'x-next-batch': next_batch})
 
         return (200, headers, json.dumps(body))
+
+    def storage_block_head_success(self, request, uri, headers):
+        parsed_url = urllib.parse.urlparse(uri)
+        url_path_parts = parsed_url.path.split('/')
+        requested_vault_id = url_path_parts[3]
+        requested_block_id = url_path_parts[-1]
+
+        if requested_vault_id != self.vault.vault_id:
+            return (404, headers, 'invalid vault id')
+
+        if requested_block_id in self.storage_data:
+
+            bid = requested_block_id
+            headers['X-Block-Reference-Count'] = \
+                self.storage_data[bid].ref_count
+            headers['X-Ref-Modified'] = self.storage_data[bid].ref_modified
+            headers['X-Storage-ID'] = self.storage_data[bid].storage_id
+            headers['X-Block-Size'] = self.storage_data[bid].block_size
+
+            headers['X-Block-Orphaned'] = \
+                self.storage_data[bid].block_orphaned
+            headers['X-Block-ID'] = self.storage_data[bid].block_id \
+                if self.storage_data[bid].block_id is not None \
+                else 'None'
+
+            return (204, headers, '')
+
+        else:
+            return (404, headers, 'invalid block id')
