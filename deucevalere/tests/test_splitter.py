@@ -50,6 +50,9 @@ class TestValereSplitter(TestValereClientBase):
             try:
                 self.assertIn(chunk[3], self.meta_data.keys())
             except IndexError:
+                # NOTE(TheSriram): The last batch will not have an end marker,
+                # since there was no x-next-batch from the listing of metadata
+                # blocks
                 pass
 
     def test_valere_meta_splitter_exception(self):
