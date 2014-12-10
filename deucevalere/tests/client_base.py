@@ -217,7 +217,29 @@ class TestValereClientBase(unittest.TestCase):
 
         start = 0
         end = len(self.meta_data)
-        if 'marker' in qs:
+
+        if 'marker' in qs and 'limit' in qs:
+            limit = int(qs['limit'][0])
+            marker = qs['marker'][0]
+
+            new_start = 0
+
+            for check_index in range(len(self.meta_data)):
+                if sorted_metadata_info[check_index] >= marker:
+                    new_start = check_index
+                    break
+
+            if new_start > start and new_start <= len(self.meta_data):
+                start = new_start
+                end = start + limit
+            if end >= len(self.meta_data):
+                end = None
+
+        elif 'limit' in qs:
+            limit = int(qs['limit'][0])
+            end = start + limit
+
+        elif 'marker' in qs:
             marker = qs['marker'][0]
 
             new_start = 0
