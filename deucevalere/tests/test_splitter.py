@@ -1,14 +1,13 @@
 """
 Deuce Valere - Tests - Splitter - Valere
 """
-import logging
+import random
 
 from deucevalere.tests.client_base import TestValereClientBase
 from deucevalere.splitter.meta_splitter import ValereSplitter
 from deucevalere.splitter.meta_splitter import ChunkError
 from deuceclient.tests import *
 
-import mock
 import httpretty
 
 
@@ -20,14 +19,14 @@ class TestValereSplitter(TestValereClientBase):
 
         self.secondary_setup(manager_start=None,
                              manager_end=None)
-        self.num_blocks = 25
-        self.limit = 4
 
     def tearDown(self):
         super().tearDown()
 
     def test_valere_meta_splitter(self):
 
+        self.num_blocks = random.randrange(10, 100)
+        self.limit = random.randrange(1, 10)
         self.generate_blocks(self.num_blocks)
 
         def metadata_listing_callback(request, uri, headers):
@@ -43,21 +42,42 @@ class TestValereSplitter(TestValereClientBase):
         splitter_client = ValereSplitter(self.deuce_client, self.vault)
         chunks = splitter_client.meta_chunker(limit=self.limit)
 
+        sorted_metadata = sorted(self.meta_data.keys())
+        index = 0
+
         for chunk in chunks:
-            self.assertIn(self.vault.vault_id, chunk)
-            self.assertIn(self.vault.project_id, chunk)
-            self.assertIn(chunk[2], self.meta_data.keys())
+
             try:
-                self.assertIn(chunk[3], self.meta_data.keys())
-            except IndexError:
+                project_id, vaultid, start_marker, end_marker = chunk
+            except ValueError:
                 # NOTE(TheSriram): The last batch will not have an end marker,
                 # since there was no x-next-batch from the listing of metadata
-                # blocks
-                pass
+                # blocks, which in turn will cause a ValueError when unpacking
+                # tuples
+                project_id, vaultid, start_marker = chunk
+                end_marker = None
+
+            self.assertEqual(self.vault.project_id, project_id)
+            self.assertEqual(self.vault.vault_id, vaultid)
+            self.assertEqual(start_marker, sorted_metadata[index])
+
+            if end_marker:
+                index += self.limit
+                self.assertEqual(end_marker, sorted_metadata[index])
 
     def test_valere_meta_splitter_exception(self):
+
+        self.limit = random.randrange(1, 10)
+
+        def metadata_listing_callback(request, uri, headers):
+            return (404, headers, 'mock failure')
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
         splitter_client = ValereSplitter(self.deuce_client, self.vault)
-        with mock.patch.object(self.deuce_client, 'GetBlockList',
-                               side_effect=RuntimeError):
-            with self.assertRaises(ChunkError):
-                splitter_client.meta_chunker(limit=self.limit)
+        with self.assertRaises(ChunkError):
+            splitter_client.meta_chunker(limit=self.limit)
