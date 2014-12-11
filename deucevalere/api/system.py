@@ -3,7 +3,9 @@ Deuce Valere - API - System
 """
 import contextlib
 import datetime
+import json
 
+from deuceclient.api import Block
 from stoplight import validate
 
 from deucevalere.common.validation import *
@@ -16,6 +18,52 @@ class TimeManager(contextlib.ContextDecorator):
         self.__name = name
         self.__start = None
         self.__end = None
+
+    def serialize(self):
+        def __serialize_time(t):
+            if t is None:
+                return 'none'
+            else:
+                return {
+                    'year': t.year,
+                    'month': t.month,
+                    'day': t.day,
+                    'hour': t.hour,
+                    'minute': t.minute,
+                    'second': t.second,
+                    'microsecond': t.microsecond
+                }
+
+        return {
+            'name': self.name,
+            'start': __serialize_time(self.start),
+            'end': __serialize_time(self.end)
+        }
+
+    @staticmethod
+    def deserialize(serialized_data):
+        def __deserialize_time(t):
+            if isinstance(t, str):
+                if t.lower() == 'none':
+                    return None
+                else:
+                    raise ValueError('Unknown value')
+            elif isinstance(t, dict):
+                return datetime.datetime(
+                    year=t['year'],
+                    month=t['month'],
+                    day=t['day'],
+                    hour=t['hour'],
+                    minute=t['minute'],
+                    second=t['second'],
+                    microsecond=t['microsecond'])
+            else:
+                raise TypeError('Unknown timestamp data type')
+
+        tm = TimeManager(serialized_data['name'])
+        tm.__start = __deserialize_time(serialized_data['start'])
+        tm.__end = __deserialize_time(serialized_data['end'])
+        return tm
 
     @property
     def name(self):
@@ -65,6 +113,20 @@ class CounterManager(object):
         self.__count = 0
         self.__byte_count = 0
 
+    def serialize(self):
+        return {
+            'name': self.name,
+            'count': self.count,
+            'size': self.size
+        }
+
+    @staticmethod
+    def deserialize(serialized_data):
+        cm = CounterManager(serialized_data['name'])
+        cm.add(serialized_data['count'],
+               serialized_data['size'])
+        return cm
+
     @property
     def name(self):
         return self.__name
@@ -94,6 +156,43 @@ class ListManager(object):
         self.__expired = None
         self.__deleted = None
         self.__orphaned = None
+
+    def serialize(self):
+        def __serialize_list(l):
+            if l is None:
+                return 'none'
+            else:
+                return l
+
+        return {
+            'name': self.name,
+            'current': __serialize_list(self.current),
+            'expired': __serialize_list(self.expired),
+            'deleted': __serialize_list(self.deleted),
+            'orphaned': __serialize_list(self.orphaned)
+        }
+
+    @staticmethod
+    def deserialize(serialized_data):
+        def __deserialize_list(l):
+            if isinstance(l, str):
+                if l.lower() == 'none':
+                    return None
+                else:
+                    raise ValueError('Unknown value')
+            elif (isinstance(l, list) or
+                  isinstance(l, dict) or
+                  isinstance(l, set)):
+                return l
+            else:
+                raise TypeError('Unknown list data type')
+
+        lm = ListManager(serialized_data['name'])
+        lm.current = __deserialize_list(serialized_data['current'])
+        lm.expired = __deserialize_list(serialized_data['expired'])
+        lm.deleted = __deserialize_list(serialized_data['deleted'])
+        lm.orphaned = __deserialize_list(serialized_data['orphaned'])
+        return lm
 
     @property
     def name(self):
@@ -174,6 +273,68 @@ class Manager(object):
         self.__properties = {
             'expired_age': expire_age
         }
+
+    def serialize(self):
+        return {
+            'expired_age': {
+                'days': self.expire_age.days,
+                'seconds': self.expire_age.seconds,
+                'microseconds': self.expire_age.microseconds
+            },
+            'markers': {
+                'start': self.__markers['start'],
+                'end': self.__markers['end']
+            },
+            'times': {
+                'validation': self.__times['validation'].serialize(),
+                'cleanup': self.__times['cleanup'].serialize()
+            },
+            'counts': {
+                'expired': self.__counters['expired'].serialize(),
+                'missing': self.__counters['missing'].serialize(),
+                'orphaned': self.__counters['orphaned'].serialize()
+            },
+            'lists': {
+                'metadata': self.__lists['metadata'].serialize(),
+                'storage': self.__lists['storage'].serialize(),
+                'xreference': self.__lists['xreference']
+            }
+        }
+
+    def to_json(self):
+        return json.dumps(self.serialize())
+
+    @staticmethod
+    def deserialize(serialized_data):
+        exp = datetime.timedelta(
+            days=serialized_data['expired_age']['days'],
+            seconds=serialized_data['expired_age']['seconds'],
+            microseconds=serialized_data['expired_age']['microseconds'])
+
+        m = Manager(marker_start=serialized_data['markers']['start'],
+                    marker_end=serialized_data['markers']['end'],
+                    expire_age=exp)
+        m.__times['validation'] = TimeManager.deserialize(
+            serialized_data['times']['validation'])
+        m.__times['cleanup'] = TimeManager.deserialize(
+            serialized_data['times']['cleanup'])
+        m.__counters['expired'] = CounterManager.deserialize(
+            serialized_data['counts']['expired'])
+        m.__counters['missing'] = CounterManager.deserialize(
+            serialized_data['counts']['missing'])
+        m.__counters['orphaned'] = CounterManager.deserialize(
+            serialized_data['counts']['orphaned'])
+        m.__lists['metadata'] = ListManager.deserialize(
+            serialized_data['lists']['metadata'])
+        m.__lists['storage'] = ListManager.deserialize(
+            serialized_data['lists']['storage'])
+        m.__lists['xreference'] = serialized_data['lists']['xreference']
+        return m
+
+    @staticmethod
+    def from_json(json_data):
+        serialized_data = json.loads(json_data)
+        return Manager.deserialize(serialized_data)
 
     @property
     def expire_age(self):
