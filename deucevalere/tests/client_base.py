@@ -196,16 +196,21 @@ class TestValereClientBase(unittest.TestCase):
 
             url = None
             block_set = None
+
             if gg_start is not None:
                 block_set = sorted_metadata_info[gg_start:gg_end]
             else:
                 block_set = sorted_metadata_info[:gg_end]
 
             if gg_end is not None:
-                block_next = sorted_metadata_info[gg_end]
 
-                url_params = urllib.parse.urlencode({'marker': block_next})
-                next_batch = '{0}?{1}'.format(url_base, url_params)
+                try:
+                    block_next = sorted_metadata_info[gg_end]
+                    url_params = urllib.parse.urlencode({'marker': block_next})
+                    next_batch = '{0}?{1}'.format(url_base, url_params)
+
+                except IndexError:
+                    return (block_set, None)
 
                 return (block_set, next_batch)
 

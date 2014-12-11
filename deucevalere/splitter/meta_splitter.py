@@ -36,7 +36,14 @@ class ValereSplitter(object):
             # as markers are returned in x-next-batch only after the first call
 
             self.deuceclient.GetBlockList(self.vault, limit=1)
-            markers.append(list(self.vault.blocks.keys())[0])
+
+            try:
+                markers.append(list(self.vault.blocks.keys())[0])
+            except IndexError:
+                return ([[self.vault.project_id,
+                         self.vault.vault_id,
+                         None,
+                         None]])
 
             marker = None
 

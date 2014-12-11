@@ -65,6 +65,36 @@ class TestValereSplitter(TestValereClientBase):
                 index += self.limit
                 self.assertEqual(end_marker, sorted_metadata[index])
 
+    def test_valere_meta_splitter_empty(self):
+
+        self.limit = random.randrange(1, 10)
+        self.generate_blocks(0)
+
+        def metadata_listing_callback(request, uri, headers):
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
+        splitter_client = ValereSplitter(self.deuce_client, self.vault)
+
+        chunks = splitter_client.meta_chunker(limit=self.limit)
+
+
+        for chunk in chunks:
+
+            project_id, vaultid, start_marker, end_marker = chunk
+
+            self.assertEqual(self.vault.project_id, project_id)
+            self.assertEqual(self.vault.vault_id, vaultid)
+            self.assertEqual(start_marker, None)
+            self.assertEqual(end_marker, None)
+
+
     def test_valere_meta_splitter_exception(self):
 
         self.limit = random.randrange(1, 10)
