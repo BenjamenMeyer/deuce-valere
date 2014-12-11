@@ -49,6 +49,56 @@ class TestValereClientBase(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
 
+    def check_time_manager(self, a, b):
+        self.assertEqual(a.name, b.name)
+        self.assertEqual(a.start, b.start)
+        self.assertEqual(a.end, b.end)
+
+    def check_counter_manager(self, a, b):
+        self.assertEqual(a.name, b.name)
+        self.assertEqual(a.count, b.count)
+        self.assertEqual(a.size, b.size)
+
+    def check_list_manager(self, a, b):
+        def __check_list(c, d):
+            if c is None:
+                self.assertIsNone(d)
+            else:
+                self.assertEqual(c, d)
+
+        self.assertEqual(a.name, b.name)
+        __check_list(a.current, b.current)
+        __check_list(a.expired, b.expired)
+        __check_list(a.deleted, b.deleted)
+        __check_list(a.orphaned, b.orphaned)
+
+    def check_manager(self, a, b):
+        def __check_marker(c, d):
+            if c is None:
+                self.assertIsNone(d)
+            else:
+                self.assertEqual(c, d)
+
+        self.assertEqual(a.expire_age, b.expire_age)
+        __check_marker(a.start_block, b.start_block)
+        __check_marker(a.end_block, b.end_block)
+        self.check_time_manager(a.validation_timer,
+                                b.validation_timer)
+        self.check_time_manager(a.cleanup_timer,
+                                b.cleanup_timer)
+        self.check_counter_manager(a.expired_counter,
+                                   b.expired_counter)
+        self.check_counter_manager(a.missing_counter,
+                                   b.missing_counter)
+        self.check_counter_manager(a.orphaned_counter,
+                                   b.orphaned_counter)
+        self.check_list_manager(a.metadata,
+                                b.metadata)
+        self.check_list_manager(a.storage,
+                                b.storage)
+        self.assertEqual(a.cross_reference,
+                         b.cross_reference)
+
     def get_metadata_block_pattern_matcher(self):
         base_url = get_blocks_url(self.apihost, self.vault.vault_id)
         regex = '{0:}/{1:}'.format(base_url[8:],
