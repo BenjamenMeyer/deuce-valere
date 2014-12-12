@@ -1,6 +1,7 @@
 """
 Deuce Valere - Client - Splitter
 """
+import itertools
 import logging
 
 from deucevalere.common.validation_instance import *
@@ -86,8 +87,8 @@ class ValereSplitter(object):
             while True:
 
                 storage_ids = self.deuceclient.GetBlockStorageList(self.vault,
-                                                     marker=marker,
-                                                     limit=limit)
+                    marker=marker,
+                    limit=limit)
                 marker = self.vault.storageblocks.marker
 
                 meta_markers = [st_marker.split('_')[0]
@@ -102,16 +103,27 @@ class ValereSplitter(object):
 
                 if marker is None:
                     break
-            # NOTE (TheSriram): There might be cases where both start and end
-            # marker might be the same. There also might be the case where the
-            # start marker being valid and end marker being None, could be
-            # repeated twice.
-            return ([self.vault.project_id,
-                     self.vault.vault_id] +
-                    self.determine_storage_start_marker(markers, i, limit) +
-                    self.determine_storage_end_marker(markers, i, limit)
-                    for i in range((len(markers) // limit) + 2))
 
+            if len(markers) % limit == 0:
+                iterations = (len(markers) // limit) + 1
+
+            else:
+                iterations = (len(markers) // limit) + 2
+
+            gen_expr = ([self.vault.project_id,
+                         self.vault.vault_id] +
+                        self.determine_storage_start_marker(markers,
+                                                            i,
+                                                            limit) +
+                        self.determine_storage_end_marker(markers,
+                                                          i,
+                                                          limit)
+                        for i in range(iterations))
+
+            # NOTE (TheSriram): Remove any cases if start and end marker
+            # are the same
+            return itertools.filterfalse(lambda chunk: chunk[2] == chunk[3],
+                                         gen_expr)
         except RuntimeError as ex:
             msg = 'Storage Chunking for Projectid: {0},' \
                   'Vault: {1} failed!' \

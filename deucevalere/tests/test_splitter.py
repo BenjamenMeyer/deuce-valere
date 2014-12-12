@@ -1,6 +1,7 @@
 """
 Deuce Valere - Tests - Splitter - Valere
 """
+import ddt
 import json
 import random
 
@@ -13,6 +14,7 @@ from deuceclient.tests import *
 import httpretty
 
 
+@ddt.ddt
 @httpretty.activate
 class TestValereSplitter(TestValereClientBase):
 
@@ -149,10 +151,18 @@ class TestValereSplitter(TestValereClientBase):
         with self.assertRaises(StorageChunkError):
             splitter_client.meta_chunker(limit=self.limit)
 
-    def test_valere_meta_splitter_orphaned_storage(self):
+    @ddt.data(True, False)
+    def test_valere_meta_splitter_orphaned_storage(self, exactly_divisible):
 
-        self.num_blocks = random.randrange(10, 100)
-        self.limit = random.randrange(1, 10)
+        if exactly_divisible:
+            self.limit = random.randrange(1, 10)
+            self.num_blocks = self.limit * random.randrange(10, 100)
+
+        else:
+            self.limit = random.randrange(10, 100)
+            self.num_blocks = (self.limit * random.randrange(10, 100)) + \
+                random.randrange(1, self.limit)
+
         self.generate_blocks(self.num_blocks)
         self.generate_orphaned_blocks(self.num_blocks +
                                       random.randrange(10, 100))
@@ -200,7 +210,6 @@ class TestValereSplitter(TestValereClientBase):
 
         index = 0
         for chunk in chunks:
-            print(chunk)
             try:
                 project_id, vaultid, start_marker, end_marker = chunk
             except ValueError:
