@@ -14,7 +14,7 @@ import deuceclient.client.deuce as client
 from deucevalere import vault_cleanup as valere_cleanup
 from deucevalere import vault_validate as valere_validate
 from deucevalere.api.auth import *
-from deucevalare.api.system import Manager
+from deucevalere.api.system import Manager
 
 
 class ProgramArgumentError(ValueError):
