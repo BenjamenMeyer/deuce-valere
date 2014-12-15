@@ -52,7 +52,7 @@ class ValereSplitter(object):
         The store_chunker is called when the listing of metadata blocks
         yielded an empty list. The list of storage blocks would then be
         chunked, by extracting the metadata block_id(sha1) from each of
-        the storage blocks.( Since each storageblock is of the form
+        the storage blocks.(Since each storageblock is of the form
         sha1_uuid5)
 
         :param limit: number of elements per chunk
@@ -90,8 +90,8 @@ class ValereSplitter(object):
                     limit=limit)
                 marker = self.vault.storageblocks.marker
 
-                meta_markers = [st_marker.split('_')[0]
-                                for st_marker in storage_ids]
+                meta_markers = (st_marker.split('_')[0]
+                                for st_marker in storage_ids)
                 for meta_marker in meta_markers:
                     if meta_marker not in markers:
                         # NOTE(TheSriram): There might be more than one
