@@ -106,8 +106,8 @@ class TestValereSplitter(TestValereClientBase):
 
             self.assertEqual(self.vault.project_id, project_id)
             self.assertEqual(self.vault.vault_id, vaultid)
-            self.assertEqual(start_marker, None)
-            self.assertEqual(end_marker, None)
+            self.assertIsNone(start_marker)
+            self.assertIsNone(end_marker)
 
     def test_valere_meta_splitter_meta_chunker_exception(self):
 

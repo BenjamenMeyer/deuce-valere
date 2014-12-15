@@ -67,11 +67,7 @@ class ValereSplitter(object):
 
             self.deuceclient.GetBlockStorageList(self.vault, limit=1)
 
-            try:
-                marker = list(self.vault.storageblocks.keys())[0]
-                markers.append(marker.split('_')[0])
-
-            except IndexError:
+            if not len(self.vault.storageblocks):
                 # NOTE(TheSriram): Looks like the listing of blocks from
                 # storage turned out to be empty, this possibly means that
                 # all the blocks have already been cleaned up, or the vault
@@ -81,6 +77,9 @@ class ValereSplitter(object):
                           self.vault.vault_id,
                           None,
                           None]])
+
+            marker = list(self.vault.storageblocks.keys())[0]
+            markers.append(marker.split('_')[0])
 
             marker = None
 
@@ -152,11 +151,7 @@ class ValereSplitter(object):
 
             self.deuceclient.GetBlockList(self.vault, limit=1)
 
-            try:
-
-                markers.append(list(self.vault.blocks.keys())[0])
-
-            except IndexError:
+            if not len(self.vault.blocks):
                 # NOTE(TheSriram): Looks like the listing of blocks from
                 # metadata turned out to be empty, this possibly means that
                 # all the blocks that remain in storage are now orphaned.
@@ -164,6 +159,8 @@ class ValereSplitter(object):
                 # extracting the metadata block_id from the returned
                 # storage_ids
                 return self.store_chunker(limit)
+
+            markers.append(list(self.vault.blocks.keys())[0])
 
             while True:
 
