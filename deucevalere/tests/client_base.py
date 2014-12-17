@@ -332,8 +332,6 @@ class TestValereClientBase(unittest.TestCase):
         end = len(self.storage_data)
 
         if 'marker' in qs and 'limit' in qs:
-            # import pdb
-            # pdb.set_trace()
             limit = int(qs['limit'][0])
             marker = qs['marker'][0]
 
