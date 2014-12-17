@@ -24,28 +24,6 @@ class ValereSplitter(object):
         self.vault = vault
         self.log = logging.getLogger(__name__)
 
-    def determine_storage_end_marker(self, markers, index, limit):
-        # NOTE(TheSriram): Slice the list depending on the iteration
-        # and the limit, and return the last element in the list. If there
-        # is an IndexError, it means we overshot the length of the list,
-        # Let the end_marker be None.
-        end_marker = markers[index * limit:((index + 1) * limit) + 1][-1:]
-        if len(end_marker) == 0:
-            return [None]
-        else:
-            return end_marker
-
-    def determine_storage_start_marker(self, markers, index, limit):
-        # NOTE(TheSriram): Slice the list depending on the iteration
-        # and the limit, and return the first element in the list
-        # If there's an index marker, it means that we overshot the
-        # length of the list, so this is would be the end of the iteration.
-        # So Lets return the last element in the list
-        try:
-            return [markers[index * limit:(index + 1) * limit][0]]
-        except IndexError:
-            return markers[-1:]
-
     @validate(limit=LimitRule)
     def store_chunker(self, limit):
         """
@@ -59,78 +37,55 @@ class ValereSplitter(object):
         :return: a list of lists containing projectid, vaultid
                  start marker and end marker
         """
-        markers = []
+        marker = None
 
-        try:
-            # NOTE(TheSriram): The first block needs to be gotten separately,
-            # as markers are returned in x-next-batch only after the first call
+        def storage_list(marker, limit):
 
-            self.deuceclient.GetBlockStorageList(self.vault, limit=1)
-
-            if not len(self.vault.storageblocks):
-                # NOTE(TheSriram): Looks like the listing of blocks from
-                # storage turned out to be empty, this possibly means that
-                # all the blocks have already been cleaned up, or the vault
-                # was empty to begin with. If thats the case then both start
-                # and end markers are set to None
-                return ([[self.vault.project_id,
-                          self.vault.vault_id,
-                          None,
-                          None]])
-
-            marker = list(self.vault.storageblocks.keys())[0]
-            markers.append(marker.split('_')[0])
-
-            marker = None
-
-            while True:
-
+            try:
                 storage_ids = self.deuceclient.GetBlockStorageList(self.vault,
                     marker=marker,
                     limit=limit)
-                marker = self.vault.storageblocks.marker
+            except RuntimeError as ex:
+                msg = 'Storage Chunking for Projectid: {0},' \
+                      'Vault: {1} failed!' \
+                      'Error : {2}'.format(self.vault.project_id,
+                                           self.vault.vault_id,
+                                           str(ex))
+                self.log.warn(msg)
+                raise StorageChunkError(msg)
 
-                meta_markers = (st_marker.split('_')[0]
-                                for st_marker in storage_ids)
-                for meta_marker in meta_markers:
-                    if meta_marker not in markers:
-                        # NOTE(TheSriram): There might be more than one
-                        # orphaned storage block starting with the same
-                        # metadata block id. Lets restrict the markers
-                        # to be unique
-                        markers.append(meta_marker)
+            if not len(storage_ids):
+                return (None, None, None)
 
-                if marker is None:
-                    break
+            st_marker = self.vault.storageblocks.marker
 
-            if len(markers) % limit == 0:
-                iterations = (len(markers) // limit) + 1
+            if not st_marker:
+                return (storage_ids[0].split('_')[0],
+                        None,
+                        None)
 
-            else:
-                iterations = (len(markers) // limit) + 2
+            return (storage_ids[0].split('_')[0],
+                    st_marker.split('_')[0],
+                    st_marker)
 
-            gen_expr = ([self.vault.project_id,
-                         self.vault.vault_id] +
-                        self.determine_storage_start_marker(markers,
-                                                            i,
-                                                            limit) +
-                        self.determine_storage_end_marker(markers,
-                                                          i,
-                                                          limit)
-                        for i in range(iterations))
+        while True:
 
-            # NOTE (TheSriram): Remove any cases if start and end marker
-            # are the same
-            return itertools.filterfalse(lambda chunk: chunk[2] == chunk[3],
-                                         gen_expr)
-        except RuntimeError as ex:
-            msg = 'Storage Chunking for Projectid: {0},' \
-                  'Vault: {1} failed!' \
-                  'Error : {2}'.format(self.vault.project_id,
-                                       self.vault.vault_id,
-                                       str(ex))
-            self.log.warn(msg)
-            raise StorageChunkError(msg)
+            start, end, st_marker = storage_list(marker, limit)
+
+            if (start, end, st_marker) == (None, None, None):
+                break
+
+            gen_expr = [self.vault.project_id,
+                        self.vault.vault_id,
+                        start,
+                        end]
+            marker = st_marker
+
+            if start != end:
+                yield gen_expr
+
+            if not end:  # pragma: no cover
+                break
 
     @validate(limit=LimitRule)
     def meta_chunker(self, limit):
@@ -143,46 +98,51 @@ class ValereSplitter(object):
         :return: a list of lists containing projectid, vaultid
                  start marker and an end marker.
         """
-        markers = []
         marker = None
-        try:
-            # NOTE(TheSriram): The first block needs to be gotten separately,
-            # as markers are returned in x-next-batch only after the first call
+        storage = None
 
-            self.deuceclient.GetBlockList(self.vault, limit=1)
+        def metadata_list(marker, limit):
 
-            if not len(self.vault.blocks):
-                # NOTE(TheSriram): Looks like the listing of blocks from
-                # metadata turned out to be empty, this possibly means that
-                # all the blocks that remain in storage are now orphaned.
-                # Let's list them out and chunk them as before after
-                # extracting the metadata block_id from the returned
-                # storage_ids
-                return self.store_chunker(limit)
+            try:
 
-            markers.append(list(self.vault.blocks.keys())[0])
+                block_ids = self.deuceclient.GetBlockList(self.vault,
+                                                          marker=marker,
+                                                          limit=limit)
 
-            while True:
+            except RuntimeError as ex:
+                msg = 'Storage Chunking for Projectid: {0},' \
+                      'Vault: {1} failed!' \
+                      'Error : {2}'.format(self.vault.project_id,
+                                           self.vault.vault_id,
+                                           str(ex))
+                self.log.warn(msg)
+                raise MetaChunkError(msg)
 
-                self.deuceclient.GetBlockList(self.vault,
-                                              marker=marker,
-                                              limit=limit)
-                marker = self.vault.blocks.marker
+            if not len(block_ids):
+                return (None, None)
 
-                if marker is None:
-                    break
-                else:
-                    markers.append(marker)
+            marker = self.vault.storageblocks.marker
 
-            return ([self.vault.project_id,
-                     self.vault.vault_id] + markers[i:i + 2]
-                    for i in range(len(markers)))
+            return (block_ids[0],
+                    marker)
+        while True:
 
-        except RuntimeError as ex:
-            msg = 'Metadata Chunking for Projectid: {0},' \
-                  'Vault: {1} failed!' \
-                  'Error : {2}'.format(self.vault.project_id,
-                                       self.vault.vault_id,
-                                       str(ex))
-            self.log.warn(msg)
-            raise MetaChunkError(msg)
+            start, end = metadata_list(marker, limit)
+
+            if (start, end) == (None, None):
+                storage = True
+                break
+
+            gen_expr = [self.vault.project_id,
+                        self.vault.vault_id,
+                        start,
+                        end]
+            marker = end
+
+            yield gen_expr
+
+            if not end:  # pragma: no cover
+                break
+
+        if storage:
+            yield from self.store_chunker(limit)
