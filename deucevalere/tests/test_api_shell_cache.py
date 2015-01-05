@@ -135,6 +135,19 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
                 with self.assertRaises(builtins.NotADirectoryError):
                     self.cache.dirname = dirname
 
+    def test_shell_cache_manager_clear(self):
+        self.cache.base = self.cache_dir
+        self.assertEqual(self.cache.base,
+                         self.cache_dir)
+        self.cache.add_manager(self.vault, self.manager)
+        self.cache.clear_manager(self.vault, self.manager)
+
+    def test_shell_cache_manager_clear_uncached(self):
+        self.cache.base = self.cache_dir
+        self.assertEqual(self.cache.base,
+                         self.cache_dir)
+        self.cache.clear_manager(self.vault, self.manager)
+
     def test_shell_cache_manager_basic(self):
         self.cache.base = self.cache_dir
         self.assertEqual(self.cache.base,
@@ -218,17 +231,31 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
             with self.assertRaises(RuntimeError):
                 self.cache.add_manager(self.vault, self.manager)
 
+    def test_shell_cache_vault_clear(self):
+        self.cache.base = self.cache_dir
+        self.assertEqual(self.cache.base,
+                         self.cache_dir)
+        self.cache.add_vault(self.vault, self.manager)
+        self.cache.clear_vault(self.vault, self.manager)
+
+    def test_shell_cache_vault_clear_uncached(self):
+        self.cache.base = self.cache_dir
+        self.assertEqual(self.cache.base,
+                         self.cache_dir)
+        self.cache.clear_vault(self.vault, self.manager)
+
     def test_shell_cache_vault_basic(self):
         self.cache.base = self.cache_dir
         self.assertEqual(self.cache.base,
                          self.cache_dir)
         self.cache.add_vault(self.vault, self.manager)
 
-        with self.assertRaises(NotImplementedError):
-            self.cache.get_vault(self.vault,
-                                 None,
-                                 None,
-                                 None)
+        new_vault = self.cache.load_vault(self.vault,
+                                          None,
+                                          None,
+                                          None)
+        self.check_vault(self.vault,
+                         new_vault)
 
     def test_shell_cache_vault_basic_with_age(self):
         self.cache.base = self.cache_dir
@@ -238,11 +265,12 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
 
         expire_age = datetime.timedelta(weeks=52)
 
-        with self.assertRaises(NotImplementedError):
-            self.cache.get_vault(self.vault,
-                                 None,
-                                 None,
-                                 None)
+        new_vault = self.cache.load_vault(self.vault,
+                                          None,
+                                          None,
+                                          expire_age)
+        self.check_vault(self.vault,
+                         new_vault)
 
     def test_shell_cache_vault_expired(self):
         self.cache.base = self.cache_dir
@@ -252,10 +280,10 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
 
         expire_age = datetime.timedelta(microseconds=5)
         with self.assertRaises(ExpiredCacheData):
-            self.cache.get_vault(self.vault,
-                                 None,
-                                 None,
-                                 expire_age)
+            self.cache.load_vault(self.vault,
+                                  None,
+                                  None,
+                                  expire_age)
 
     def test_shell_cache_vault_no_data(self):
         self.cache.base = self.cache_dir
@@ -263,10 +291,10 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
                          self.cache_dir)
 
         with self.assertRaises(NoCachedData):
-            self.cache.get_vault(self.vault,
-                                 None,
-                                 None,
-                                 None)
+            self.cache.load_vault(self.vault,
+                                  None,
+                                  None,
+                                  None)
 
     def test_shell_cache_vault_basic_with_start_end(self):
         self.cache.base = self.cache_dir
@@ -279,11 +307,12 @@ class DeuceValereApiShellCacheTest(TestValereClientBase):
 
         self.cache.add_vault(self.vault, self.manager)
 
-        with self.assertRaises(NotImplementedError):
-            self.cache.get_vault(self.vault,
-                                 start_block,
-                                 end_block,
-                                 None)
+        new_vault = self.cache.load_vault(self.vault,
+                                          start_block,
+                                          end_block,
+                                          None)
+        self.check_vault(self.vault,
+                         new_vault)
 
     def test_shell_cache_add_vault_failure(self):
         self.cache.base = self.cache_dir

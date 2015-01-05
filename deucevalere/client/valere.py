@@ -118,8 +118,6 @@ class ValereClient(object):
         Checks if the reference count is zero
         For blocks with zero reference counts mark them as expired if they
         pass the age specified by the manager
-
-        Note: Expired blocks will remain in the current block list
         """
         # Note: THis function is a little more verbose since it is detecting
         #       which blocks to delete.
@@ -198,6 +196,7 @@ class ValereClient(object):
                     # do not add it a second time; try to keep the list
                     # to a minimum
                     if block_id not in self.manager.metadata.expired:
+                        self.manager.expired_counter.add(1, block.block_size)
                         self.manager.metadata.expired.append(block_id)
 
             else:
@@ -207,6 +206,13 @@ class ValereClient(object):
                                  self.vault.vault_id,
                                  block_id,
                                  block.ref_count))
+
+        for block_id in self.manager.metadata.expired:
+            # there _should_ only be one instance of a block_id in the
+            # current list; but loop over it just in case since remove()
+            # only removes the first instance it finds
+            while block_id in self.manager.metadata.current:
+                self.manager.metadata.current.remove(block_id)
 
     def cleanup_expired_blocks(self):
         """Delete expired blocks
@@ -262,6 +268,11 @@ class ValereClient(object):
                         #   2. Do not mutate the expired block list while it
                         #      is being traversed; it'll get cleaned up later
                         self.manager.metadata.deleted.append(expired_block_id)
+
+                        block_size = self.vault.blocks[
+                            expired_block_id].block_size
+                        self.manager.deleted_counter.add(1,
+                                                         block_size)
                         self.log.info('Project ID {0}, Vault {1} - '
                                       'Successfully Deleted Expired Block: {2}'
                                       .format(self.vault.project_id,
@@ -304,50 +315,54 @@ class ValereClient(object):
                              the cross reference data.
         """
 
-        if self.manager.metadata.current is not None:
-            check_expired = self.manager.metadata.expired is not None
-            check_deleted = self.manager.metadata.deleted is not None
+        check_expired = self.manager.metadata.expired is not None
+        check_deleted = self.manager.metadata.deleted is not None
 
-            if skip_expired:
-                check_expired = False
+        if skip_expired:
+            check_expired = False
 
-            for block_id in self.manager.metadata.current:
-                # Skip the block if it was expired
-                if check_expired:
-                    if block_id in self.manager.metadata.expired:
-                        self.log.debug('Project ID {0}, Vault {1} - '
-                                       'block {2} expired, not '
-                                       'cross-referencing'
-                                       .format(self.vault.project_id,
-                                               self.vault.vault_id,
-                                               block_id))
-                        continue
+        for block_id, block in self.vault.blocks.items():
+            storage_id = block.storage_id
+            self.log.debug('Project ID {0}, Vault {1} - '
+                           'Checking status of Storage ID {2} '
+                           'with Block ID {3}'
+                           .format(self.vault.project_id,
+                                   self.vault.vault_id,
+                                   storage_id,
+                                   block_id))
 
-                # Skip the block if it was deleted
-                if check_deleted:
-                    if block_id in self.manager.metadata.deleted:
-                        self.log.debug('Project ID {0}, Vault {1} - '
-                                       'block {2} deleted, not '
-                                       'cross-referencing'
-                                       .format(self.vault.project_id,
-                                               self.vault.vault_id,
-                                               block_id))
-                        continue
+            # Skip the block if it was expired
+            if check_expired:
+                if block_id in self.manager.metadata.expired:
+                    self.log.debug('Project ID {0}, Vault {1} - '
+                                   'block {2} expired, not '
+                                   'cross-referencing'
+                                   .format(self.vault.project_id,
+                                           self.vault.vault_id,
+                                           block_id))
+                    continue
 
-                # lookup the storage id
-                storage_id = self.vault.blocks[block_id].storage_id
-                self.log.debug('Project ID {0}, Vault {1} - '
-                               'Mapping Storage ID {2} to Block ID {3}'
-                               .format(self.vault.project_id,
-                                       self.vault.vault_id,
-                                       storage_id,
-                                       block_id))
+            # Skip the block if it was deleted
+            if check_deleted:
+                if block_id in self.manager.metadata.deleted:
+                    self.log.debug('Project ID {0}, Vault {1} - '
+                                   'block {2} deleted, not '
+                                   'cross-referencing'
+                                   .format(self.vault.project_id,
+                                           self.vault.vault_id,
+                                           block_id))
+                    continue
 
-                # Add it to the cross-reference dict
-                self.manager.cross_reference[storage_id] = block_id
+            # lookup the storage id
+            self.log.debug('Project ID {0}, Vault {1} - '
+                           'Mapping Storage ID {2} to Block ID {3}'
+                           .format(self.vault.project_id,
+                                   self.vault.vault_id,
+                                   storage_id,
+                                   block_id))
 
-        else:
-            self.log.info('No blocks to build cross-reference for')
+            # Add it to the cross-reference dict
+            self.manager.cross_reference[storage_id] = block_id
 
     def validate_storage(self, skip_expired=False):
         """Check storage for orphaned blocks
@@ -396,7 +411,7 @@ class ValereClient(object):
 
         # Note: Marking a block orphaned here does not necessarily mean it is
         #       actually orphaned as there could have been activity on the
-        #       Vaultsince we got the listings that could change the state of
+        #       Vault since we got the listings that could change the state of
         #       any block.This cuts both ways in that some blocks we determine
         #       are orphaned may not be orphaned, while other blocks we think
         #       are not orphaned are actually orphaned. This is okay as Deuce
@@ -412,6 +427,7 @@ class ValereClient(object):
                                   self.vault.vault_id,
                                   storage_id))
                 self.manager.storage.orphaned.append(storage_id)
+                self.manager.orphaned_counter.add(1, 0)
 
     def validate_storage_with_head(self):
         """Check storage for orphaned blocks
@@ -474,6 +490,7 @@ class ValereClient(object):
                                   self.vault.vault_id,
                                   storage_id))
                 self.manager.storage.orphaned.append(storage_id)
+                self.manager.orphaned_counter.add(1, block.block_size)
 
     def cleanup_storage(self):
         """Delete orphaned blocks from storage
@@ -509,7 +526,7 @@ class ValereClient(object):
 
                     # Log that we are going to delete the block
                     self.log.info('Project ID {0}, Vault {1} - '
-                                  'Deleting Expired Block: {2}'
+                                  'Deleting Orphaned Block: {2}'
                                   .format(self.vault.project_id,
                                           self.vault.vault_id,
                                           orphaned_storage_block_id))
@@ -536,6 +553,15 @@ class ValereClient(object):
                         #      is being traversed; it'll get cleaned up later
                         self.manager.storage.deleted.append(
                             orphaned_storage_block_id)
+
+                        # By default this will be zero and this should be
+                        # valid since the oprhaned_storage_block_id comes
+                        # from listing the storage blocks to start with
+                        block_size = self.vault.storageblocks[
+                            orphaned_storage_block_id].block_size
+
+                        self.manager.deleted_counter.add(1, block_size)
+
                         self.log.info('Project ID {0}, Vault {1} - '
                                       'Successfully Deleted Orphaned Block: '
                                       '{2}'
