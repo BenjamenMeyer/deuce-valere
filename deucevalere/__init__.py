@@ -98,6 +98,9 @@ def vault_validate(deuece_client, vault, manager,
         # here to remove this anomaly and reduce the potential erros.
         valere_client.validate_storage(skip_expired=True)
 
+    # Finally calculate the amount of current data
+    valere_client.calculate_current()
+
     return 0
 
 

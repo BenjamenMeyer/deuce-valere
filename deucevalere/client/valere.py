@@ -492,6 +492,15 @@ class ValereClient(object):
                 self.manager.storage.orphaned.append(storage_id)
                 self.manager.orphaned_counter.add(1, block.block_size)
 
+    def calculate_current(self):
+        """Calculate the amount of data that is still current
+        """
+
+        if self.manager.metadata.current is not None:
+            for block_id in self.manager.metadata.current:
+                block_size = self.vault.blocks[block_id].block_size
+                self.manager.current_counter.add(1, block_size)
+
     def cleanup_storage(self):
         """Delete orphaned blocks from storage
 
