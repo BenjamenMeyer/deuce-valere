@@ -264,16 +264,21 @@ class TestValereClientBase(VaultTestBase):
 
             url = None
             block_set = None
+
             if gg_start is not None:
                 block_set = sorted_metadata_info[gg_start:gg_end]
             else:
                 block_set = sorted_metadata_info[:gg_end]
 
             if gg_end is not None:
-                block_next = sorted_metadata_info[gg_end]
 
-                url_params = urllib.parse.urlencode({'marker': block_next})
-                next_batch = '{0}?{1}'.format(url_base, url_params)
+                try:
+                    block_next = sorted_metadata_info[gg_end]
+                    url_params = urllib.parse.urlencode({'marker': block_next})
+                    next_batch = '{0}?{1}'.format(url_base, url_params)
+
+                except IndexError:
+                    return (block_set, None)
 
                 return (block_set, next_batch)
 
@@ -285,7 +290,29 @@ class TestValereClientBase(VaultTestBase):
 
         start = 0
         end = len(self.meta_data)
-        if 'marker' in qs:
+
+        if 'marker' in qs and 'limit' in qs:
+            limit = int(qs['limit'][0])
+            marker = qs['marker'][0]
+
+            new_start = 0
+
+            for check_index in range(len(self.meta_data)):
+                if sorted_metadata_info[check_index] >= marker:
+                    new_start = check_index
+                    break
+
+            if new_start > start and new_start <= len(self.meta_data):
+                start = new_start
+                end = start + limit
+            if end >= len(self.meta_data):
+                end = None
+
+        elif 'limit' in qs:
+            limit = int(qs['limit'][0])
+            end = start + limit
+
+        elif 'marker' in qs:
             marker = qs['marker'][0]
 
             new_start = 0
@@ -352,10 +379,14 @@ class TestValereClientBase(VaultTestBase):
                 block_set = sorted_storage_data_info[:gg_end]
 
             if gg_end is not None:
-                block_next = sorted_storage_data_info[gg_end]
 
-                url_params = urllib.parse.urlencode({'marker': block_next})
-                next_batch = '{0}?{1}'.format(url_base, url_params)
+                try:
+                    block_next = sorted_storage_data_info[gg_end]
+                    url_params = urllib.parse.urlencode({'marker': block_next})
+                    next_batch = '{0}?{1}'.format(url_base, url_params)
+
+                except IndexError:
+                    return (block_set, None)
 
                 return (block_set, next_batch)
 
@@ -367,10 +398,33 @@ class TestValereClientBase(VaultTestBase):
 
         start = 0
         end = len(self.storage_data)
-        if 'marker' in qs:
+
+        if 'marker' in qs and 'limit' in qs:
+            limit = int(qs['limit'][0])
             marker = qs['marker'][0]
 
             new_start = 0
+
+            for check_index in range(len(self.storage_data)):
+                if sorted_storage_data_info[check_index] >= marker:
+                    new_start = check_index
+                    break
+
+            if new_start >= start and new_start <= len(self.storage_data):
+                start = new_start
+                end = start + limit
+            if end >= len(self.storage_data):
+                end = None
+
+        elif 'limit' in qs:
+            limit = int(qs['limit'][0])
+            end = start + limit
+
+        elif 'marker' in qs:
+            marker = qs['marker'][0]
+
+            new_start = 0
+
             for check_index in range(len(self.storage_data)):
                 if sorted_storage_data_info[check_index] >= marker:
                     new_start = check_index
@@ -382,7 +436,6 @@ class TestValereClientBase(VaultTestBase):
 
             if end >= len(self.storage_data):
                 end = None
-
         else:
             start = None
             end = self.storage_calculate_position()
