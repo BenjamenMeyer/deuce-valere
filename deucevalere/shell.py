@@ -198,6 +198,17 @@ def print_report(manager, title=None, show_missing=True,
                                calc_kilobytes(manager.expired_counter.size),
                                manager.expired_counter.size])
 
+    if show_deleted is True:
+        display_table.add_row(['Deleted (Expired)',
+                               manager.delete_expired_counter.count,
+                               calc_gigabytes(
+                                   manager.delete_expired_counter.size),
+                               calc_megabytes(
+                                   manager.delete_expired_counter.size),
+                               calc_kilobytes(
+                                   manager.delete_expired_counter.size),
+                               manager.delete_expired_counter.size])
+
     if show_orphaned is True:
         display_table.add_row(['Orphaned',
                                manager.orphaned_counter.count,
@@ -207,12 +218,15 @@ def print_report(manager, title=None, show_missing=True,
                                manager.orphaned_counter.size])
 
     if show_deleted is True:
-        display_table.add_row(['Deleted',
-                               manager.deleted_counter.count,
-                               calc_gigabytes(manager.deleted_counter.size),
-                               calc_megabytes(manager.deleted_counter.size),
-                               calc_kilobytes(manager.deleted_counter.size),
-                               manager.deleted_counter.size])
+        display_table.add_row(['Deleted (Orphaned)',
+                               manager.delete_orphaned_counter.count,
+                               calc_gigabytes(
+                                   manager.delete_orphaned_counter.size),
+                               calc_megabytes(
+                                   manager.delete_orphaned_counter.size),
+                               calc_kilobytes(
+                                   manager.delete_orphaned_counter.size),
+                               manager.delete_orphaned_counter.size])
 
     if title:
         print(title)

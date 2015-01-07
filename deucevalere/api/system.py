@@ -374,7 +374,11 @@ class Manager(object):
         return self.__counters['current']
 
     @property
-    def deleted_counter(self):
+    def delete_expired_counter(self):
+        return self.__counters['deleted']
+
+    @property
+    def delete_orphaned_counter(self):
         return self.__counters['deleted']
 
     @property

@@ -271,7 +271,7 @@ class ValereClient(object):
 
                         block_size = self.vault.blocks[
                             expired_block_id].block_size
-                        self.manager.deleted_counter.add(1,
+                        self.manager.delete_expired_counter.add(1,
                                                          block_size)
                         self.log.info('Project ID {0}, Vault {1} - '
                                       'Successfully Deleted Expired Block: {2}'
@@ -569,7 +569,7 @@ class ValereClient(object):
                         block_size = self.vault.storageblocks[
                             orphaned_storage_block_id].block_size
 
-                        self.manager.deleted_counter.add(1, block_size)
+                        self.manager.delete_orphaned_counter.add(1, block_size)
 
                         self.log.info('Project ID {0}, Vault {1} - '
                                       'Successfully Deleted Orphaned Block: '

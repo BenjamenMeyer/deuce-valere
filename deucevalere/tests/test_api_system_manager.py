@@ -26,6 +26,8 @@ class DeuceValereApiSystemManagerTest(unittest.TestCase):
         self.assertIsInstance(manager.expired_counter, CounterManager)
         self.assertIsInstance(manager.missing_counter, CounterManager)
         self.assertIsInstance(manager.orphaned_counter, CounterManager)
+        self.assertIsInstance(manager.delete_expired_counter, CounterManager)
+        self.assertIsInstance(manager.delete_orphaned_counter, CounterManager)
         self.assertIsInstance(manager.metadata, ListManager)
         self.assertIsInstance(manager.storage, ListManager)
         self.assertIsInstance(manager.cross_reference, dict)
