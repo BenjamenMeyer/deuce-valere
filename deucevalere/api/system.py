@@ -252,7 +252,8 @@ class Manager(object):
         }
         self.__counters = {
             'current': CounterManager('current'),
-            'deleted': CounterManager('deleted'),
+            'deleted_expired': CounterManager('deleted_expired'),
+            'deleted_orphaned': CounterManager('deleted_orphaned'),
             'expired': CounterManager('expired'),
             'missing': CounterManager('missing'),
             'orphaned': CounterManager('orphaned')
@@ -293,7 +294,10 @@ class Manager(object):
             },
             'counts': {
                 'current': self.__counters['current'].serialize(),
-                'deleted': self.__counters['deleted'].serialize(),
+                'deleted_expired':
+                    self.__counters['deleted_expired'].serialize(),
+                'deleted_orphaned':
+                    self.__counters['deleted_orphaned'].serialize(),
                 'expired': self.__counters['expired'].serialize(),
                 'missing': self.__counters['missing'].serialize(),
                 'orphaned': self.__counters['orphaned'].serialize()
@@ -326,8 +330,10 @@ class Manager(object):
             serialized_data['counts']['current'])
         m.__counters['expired'] = CounterManager.deserialize(
             serialized_data['counts']['expired'])
-        m.__counters['deleted'] = CounterManager.deserialize(
-            serialized_data['counts']['deleted'])
+        m.__counters['deleted_expired'] = CounterManager.deserialize(
+            serialized_data['counts']['deleted_expired'])
+        m.__counters['deleted_orphaned'] = CounterManager.deserialize(
+            serialized_data['counts']['deleted_orphaned'])
         m.__counters['missing'] = CounterManager.deserialize(
             serialized_data['counts']['missing'])
         m.__counters['orphaned'] = CounterManager.deserialize(
@@ -375,11 +381,11 @@ class Manager(object):
 
     @property
     def delete_expired_counter(self):
-        return self.__counters['deleted']
+        return self.__counters['deleted_expired']
 
     @property
     def delete_orphaned_counter(self):
-        return self.__counters['deleted']
+        return self.__counters['deleted_orphaned']
 
     @property
     def expired_counter(self):
