@@ -159,7 +159,7 @@ class TestValereClientBase(VaultTestBase):
         for block_id in self.meta_data.keys():
             sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
             bd = self.meta_data[block_id].data
-            bs = self.meta_data[block_id].block_size
+            bs = len(self.meta_data[block_id])
             rc = random.randint(0, 4)
             rmod = generate_ref_modified()
 
@@ -182,7 +182,7 @@ class TestValereClientBase(VaultTestBase):
         def make_orphaned_storage_block(block_id):
             sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
             bd = self.meta_data[block_id].data
-            bs = self.meta_data[block_id].block_size
+            bs = len(self.meta_data[block_id])
             rc = random.randint(0, 4)
             rmod = generate_ref_modified()
 
@@ -358,7 +358,7 @@ class TestValereClientBase(VaultTestBase):
             headers['X-Ref-Modified'] = self.meta_data[bid].ref_modified
             headers['X-Storage-ID'] = self.meta_data[bid].storage_id
             headers['X-Block-ID'] = self.meta_data[bid].block_id
-            headers['X-Block-Size'] = self.meta_data[bid].block_size
+            headers['X-Block-Size'] = len(self.meta_data[bid])
             return (204, headers, '')
 
         else:
@@ -465,7 +465,7 @@ class TestValereClientBase(VaultTestBase):
                 self.storage_data[bid].ref_count
             headers['X-Ref-Modified'] = self.storage_data[bid].ref_modified
             headers['X-Storage-ID'] = self.storage_data[bid].storage_id
-            headers['X-Block-Size'] = self.storage_data[bid].block_size
+            headers['X-Block-Size'] = len(self.storage_data[bid])
 
             headers['X-Block-Orphaned'] = \
                 self.storage_data[bid].block_orphaned

@@ -196,7 +196,7 @@ class ValereClient(object):
                     # do not add it a second time; try to keep the list
                     # to a minimum
                     if block_id not in self.manager.metadata.expired:
-                        self.manager.expired_counter.add(1, block.block_size)
+                        self.manager.expired_counter.add(1, len(block))
                         self.manager.metadata.expired.append(block_id)
 
             else:
@@ -269,8 +269,8 @@ class ValereClient(object):
                         #      is being traversed; it'll get cleaned up later
                         self.manager.metadata.deleted.append(expired_block_id)
 
-                        block_size = self.vault.blocks[
-                            expired_block_id].block_size
+                        block_size = len(self.vault.blocks[
+                            expired_block_id])
                         self.manager.delete_expired_counter.add(1,
                                                          block_size)
                         self.log.info('Project ID {0}, Vault {1} - '
@@ -427,7 +427,23 @@ class ValereClient(object):
                                   self.vault.vault_id,
                                   storage_id))
                 self.manager.storage.orphaned.append(storage_id)
-                self.manager.orphaned_counter.add(1, 0)
+
+                block_size = len(self.vault.storageblocks[storage_id])
+
+                if block_size == 0:
+                    mid, sid = storage_id.split('_')
+
+                    if mid in self.vault.blocks:
+                        self.log.info('Project ID {0}, Vault {1} - '
+                                      'Located block {2} matching '
+                                      'orphaned block {3}. Using for '
+                                      'block size'.format(
+                                          self.vault.project_id,
+                                          self.vault.vault_id,
+                                          mid,
+                                          storage_id))
+                        block_size = len(self.vault.blocks[mid])
+                self.manager.orphaned_counter.add(1, block_size)
 
     def validate_storage_with_head(self):
         """Check storage for orphaned blocks
@@ -490,7 +506,23 @@ class ValereClient(object):
                                   self.vault.vault_id,
                                   storage_id))
                 self.manager.storage.orphaned.append(storage_id)
-                self.manager.orphaned_counter.add(1, block.block_size)
+
+                block_size = len(block)
+
+                if block_size == 0:
+                    mid, sid = storage_id.split('_')
+
+                    if mid in self.vault.blocks:
+                        self.log.info('Project ID {0}, Vault {1} - '
+                                      'Located block {2} matching '
+                                      'orphaned block {3}. Using for '
+                                      'block size'.format(
+                                          self.vault.project_id,
+                                          self.vault.vault_id,
+                                          mid,
+                                          storage_id))
+                        block_size = len(self.vault.blocks[mid])
+                self.manager.orphaned_counter.add(1, block_size)
 
     def calculate_current(self):
         """Calculate the amount of data that is still current
@@ -498,7 +530,7 @@ class ValereClient(object):
 
         if self.manager.metadata.current is not None:
             for block_id in self.manager.metadata.current:
-                block_size = self.vault.blocks[block_id].block_size
+                block_size = len(self.vault.blocks[block_id])
                 self.manager.current_counter.add(1, block_size)
 
     def cleanup_storage(self):
@@ -566,8 +598,22 @@ class ValereClient(object):
                         # By default this will be zero and this should be
                         # valid since the oprhaned_storage_block_id comes
                         # from listing the storage blocks to start with
-                        block_size = self.vault.storageblocks[
-                            orphaned_storage_block_id].block_size
+                        block_size = len(self.vault.storageblocks[
+                            orphaned_storage_block_id])
+
+                        if block_size == 0:
+                            mid, sid = orphaned_storage_block_id.split('_')
+
+                            if mid in self.vault.blocks:
+                                self.log.info('Project ID {0}, Vault {1} - '
+                                              'Located block {2} matching '
+                                              'orphaned block {3}. Using for '
+                                              'block size'.format(
+                                                  self.vault.project_id,
+                                                  self.vault.vault_id,
+                                                  mid,
+                                                  orphaned_storage_block_id))
+                                block_size = len(self.vault.blocks[mid])
 
                         self.manager.delete_orphaned_counter.add(1, block_size)
 

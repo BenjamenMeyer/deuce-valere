@@ -231,7 +231,7 @@ def print_report(manager, title=None, show_missing=True,
                                    '-'])
 
     if show_deleted is True:
-        if manager.delete_orphaned_counter.count > 0:
+        if manager.delete_orphaned_counter.size > 0:
             display_table.add_row(['Deleted (Orphaned)',
                                    manager.delete_orphaned_counter.count,
                                    calc_gigabytes(
