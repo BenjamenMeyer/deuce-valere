@@ -190,7 +190,6 @@ class TestValereClientValidateMetadata(TestValereClientBase):
         key_set = sorted(
             list(self.meta_data.keys()))[0:__min_max(len(self.meta_data), 10)]
         for key in key_set:
-            print('Setting Block {0:} to have ZERO (0) Ref Count'.format(key))
             self.meta_data[key].ref_count = 0
 
         self.client.validate_metadata()

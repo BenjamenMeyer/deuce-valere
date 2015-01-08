@@ -3,11 +3,19 @@ Deuce Valere - Tests
 """
 import unittest
 
+from deuceclient.tests import *
+
 from deucevalere.api.auth import baseauth
 
 
 def minmax(a, b):
     return max(min(a, b), b)
+
+
+def create_null_block():
+    block_data = bytes()
+    block_id = get_block_id(block_data)
+    return (block_id, block_data, len(block_data))
 
 
 class FakeAuthEngine(baseauth.AuthenticationBase):

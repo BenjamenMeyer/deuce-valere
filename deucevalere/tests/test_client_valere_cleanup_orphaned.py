@@ -82,6 +82,54 @@ class TestValereClientCleanupOrphaned(TestValereClientBase):
         self.assertEqual(self.orphaned_count,
                          len(self.manager.storage.deleted))
 
+    def test_cleanup_orphaned_with_some_not_in_metadata(self):
+        """Basic Validate Storage Test
+
+            Note: "orphaned" data is only what was deleted
+                  this is just due to how the test is structured.
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        def storage_head_callback(request, uri, headers):
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
+
+        def storage_delete_callback(request, uri, headers):
+            return (204, headers, '')
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_head_callback)
+
+        httpretty.register_uri(httpretty.DELETE,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_delete_callback)
+
+        self.generate_orphaned_blocks(self.orphaned_count)
+        self.generate_null_block(block_in_metadata=False,
+                                 orphaned_count=self.orphaned_count)
+
+        self.client.validate_storage_with_head()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+        self.assertIsNone(self.manager.storage.deleted)
+
+        self.client.cleanup_storage()
+        self.assertIsNotNone(self.manager.storage.deleted)
+        self.assertEqual((self.orphaned_count * 2),
+                         len(self.manager.storage.deleted))
+
     def test_cleanup_orphaned_delete_failed(self):
         """Basic Validate Storage Test
 

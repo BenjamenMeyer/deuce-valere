@@ -229,6 +229,133 @@ class TestValereClientBase(VaultTestBase):
                 extra_block = extra_block - 1
                 total_orphaned = total_orphaned + 1
 
+    def generate_orphaned_blocks_no_metadata(self, count):
+
+        def make_orphaned_storage_block_no_metadata(block_id):
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = bytes(random.randint(10, 10))
+            bs = len(bd)
+            rc = 0
+            rmod = 0
+
+            # Insert into Storage
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=None,
+                                            data=bd,
+                                            block_size=bs,
+                                            ref_count=rc,
+                                            block_orphaned=True,
+                                            ref_modified=rmod,
+                                            block_type='storage')
+            return sbid
+
+        return_value = []
+        for block in create_blocks(block_count=count):
+            return_value.append(
+                make_orphaned_storage_block_no_metadata(block[0]))
+
+        return return_value
+
+    def generate_null_block(self, block_in_metadata, orphaned_count):
+
+        block_id, block_data, block_size = create_null_block()
+
+        if block_in_metadata:
+            storage_nnoid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            rc = 0
+            rm = generate_ref_modified()
+            self.meta_data[block_id] = Block(self.project_id,
+                                             self.vault_id,
+                                             block_id=block_id,
+                                             storage_id=storage_nnoid,
+                                             data=block_data,
+                                             block_size=block_size,
+                                             ref_count=rc,
+                                             block_orphaned=False,
+                                             ref_modified=rm
+                                             )
+            self.storage_data[storage_nnoid] = Block(self.project_id,
+                                                     self.vault_id,
+                                                     block_id=block_id,
+                                                     storage_id=storage_nnoid,
+                                                     data=block_data,
+                                                     block_size=block_size,
+                                                     ref_count=rc,
+                                                     block_orphaned=False,
+                                                     ref_modified=rm,
+                                                     block_type='storage'
+                                                     )
+
+        def add_null_block_to_storage():
+            storage_bid = block_id if block_in_metadata else None
+            storage_nid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            self.storage_data[storage_nid] = Block(self.project_id,
+                                                   self.vault_id,
+                                                   block_id=storage_bid,
+                                                   storage_id=storage_nid,
+                                                   data=block_data,
+                                                   block_size=block_size,
+                                                   ref_count=0,
+                                                   block_orphaned=True,
+                                                   ref_modified=0,
+                                                   block_type='storage'
+                                                   )
+        for _ in range(orphaned_count):
+            add_null_block_to_storage()
+
+    def generate_orphaned_blocks_no_size(self, count, in_metadata):
+
+        def make_orphaned_storage_block_in_metadata(block_id):
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = self.meta_data[block_id].data
+            bs = len(self.meta_data[block_id])
+            rc = random.randint(0, 4)
+            rmod = generate_ref_modified()
+
+            # Update Metadata
+            self.meta_data[block_id].storage_id = sbid
+
+            # Insert into Storage
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=None,
+                                            data=None,
+                                            block_size=0,
+                                            ref_count=rc,
+                                            block_orphaned=True,
+                                            ref_modified=rmod,
+                                            block_type='storage')
+
+        def make_orphaned_storage_block_no_metadata(block_id):
+            sbid = '{0}_{1}'.format(block_id, uuid.uuid4())
+            bd = None
+            bs = 0
+            rc = 0
+            rmod = 0
+
+            # Insert into Storage
+            self.storage_data[sbid] = Block(self.project_id,
+                                            self.vault_id,
+                                            storage_id=sbid,
+                                            block_id=None,
+                                            data=bd,
+                                            block_size=bs,
+                                            ref_count=rc,
+                                            block_orphaned=True,
+                                            ref_modified=rmod,
+                                            block_type='storage')
+            return sbid
+
+        return_value = []
+        for block in create_blocks(block_count=count):
+            return_value.append(
+                make_orphaned_storage_block_no_metadata(block[0]))
+
+        return return_value
+
     def secondary_setup(self, manager_start, manager_end):
         if not hasattr(self, 'project_id'):
             self.project_id = None
@@ -502,9 +629,6 @@ class TestValereClientBase(VaultTestBase):
                 block.ref_modified)
             if check_delta > self.manager.expire_age and block.ref_count == 0:
                 check_count = check_count + 1
-                print('Block {0:} has expired age of {1}'
-                      .format(block.block_id,
-                              check_delta))
         return check_count
 
     def guarantee_deleted(self, count):
@@ -526,8 +650,6 @@ class TestValereClientBase(VaultTestBase):
                     self.manager.storage.deleted.append(block.storage_id)
                     self.manager.metadata.deleted.append(block.block_id)
                     total_deleted = total_deleted + 1
-                    print('Block {0:} is deleted'
-                          .format(block.storage_id))
 
             # only record as many deleted as requested
             if total_deleted >= count:

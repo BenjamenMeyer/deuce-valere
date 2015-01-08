@@ -70,28 +70,8 @@ class TestValereClientValidateStorage(TestValereClientBase):
                                surl,
                                body=storage_listing_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
         self.client.cleanup_expired_blocks()
@@ -148,28 +128,8 @@ class TestValereClientValidateStorage(TestValereClientBase):
                                surl,
                                body=storage_listing_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
         self.client.cleanup_expired_blocks()
@@ -224,28 +184,8 @@ class TestValereClientValidateStorage(TestValereClientBase):
                                surl,
                                body=storage_listing_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
         self.client.cleanup_expired_blocks()
@@ -307,28 +247,8 @@ class TestValereClientValidateStorage(TestValereClientBase):
                                surl,
                                body=storage_listing_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         # Note: this will have zero cross references because there are no
         # blocks
@@ -341,4 +261,70 @@ class TestValereClientValidateStorage(TestValereClientBase):
         self.assertIsInstance(self.manager.storage.orphaned, list)
 
         self.assertEqual(len(self.meta_data),
+                         len(self.manager.storage.orphaned))
+
+    def test_validate_storage_no_overlap(self):
+        """Test with no metadata blocks available
+
+            Note: This test essentially makes all blocks in
+                  storage be detected as orphaned blocks
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def metadata_listing_callback(request, uri, headers):
+            return (200, headers, json.dumps([]))
+
+        def metadata_head_callback(request, uri, headers):
+            return self.metadata_block_head_success(request,
+                                                    uri,
+                                                    headers)
+
+        def metadata_delete_callback(request, uri, headers):
+            return (204, headers, '')
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_metadata_block_pattern_matcher(),
+                               body=metadata_head_callback)
+
+        httpretty.register_uri(httpretty.DELETE,
+                               self.get_metadata_block_pattern_matcher(),
+                               body=metadata_delete_callback)
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
+
+        fully_orphaned_blocks = self.generate_orphaned_blocks_no_metadata(
+            count=10)
+
+        # Note: this will have zero cross references because there are no
+        # blocks
+        self.client.get_block_list()
+        self.client.build_cross_references()
+        self.client.get_storage_list()
+
+        for storage_id in fully_orphaned_blocks:
+            self.vault.storageblocks[storage_id].set_block_size(
+                len(self.storage_data[storage_id]))
+
+        self.assertIsNone(self.manager.storage.orphaned)
+        self.client.validate_storage()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+
+        self.assertEqual(len(self.storage_data),
                          len(self.manager.storage.orphaned))

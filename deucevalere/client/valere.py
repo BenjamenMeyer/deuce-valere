@@ -509,10 +509,18 @@ class ValereClient(object):
 
                 block_size = len(block)
 
+                self.log.info('Storage Block ID {0} - block size {1}'
+                              .format(storage_id, block_size))
+
                 if block_size == 0:
                     mid, sid = storage_id.split('_')
 
+                    self.log.info('\tBlock ID: {0}'.format(mid))
+                    self.log.info('\tStorage UUID: {0}'.format(sid))
+
                     if mid in self.vault.blocks:
+                        self.log.info('\tBlock ID {0} in Vault'.format(mid))
+
                         self.log.info('Project ID {0}, Vault {1} - '
                                       'Located block {2} matching '
                                       'orphaned block {3}. Using for '
@@ -521,6 +529,9 @@ class ValereClient(object):
                                           self.vault.vault_id,
                                           mid,
                                           storage_id))
+                        self.log.info('\tUpdating Block Size from {0} to {1}'
+                                      .format(block_size,
+                                              len(self.vault.blocks[mid])))
                         block_size = len(self.vault.blocks[mid])
                 self.manager.orphaned_counter.add(1, block_size)
 
