@@ -38,7 +38,11 @@ def generate_ref_modified():
     )
 
 
-class TestValereClientBase(unittest.TestCase):
+def generate_ref_modified_now():
+    return calculate_ref_modified()
+
+
+class TestValereClientBase(VaultTestBase):
 
     def setUp(self):
         super().setUp()
@@ -122,6 +126,20 @@ class TestValereClientBase(unittest.TestCase):
             splitter = self.data_splitter
 
         return int(len(self.storage_data) / splitter)
+
+    def generate_empty_blocks(self, count):
+        for _ in range(count):
+            self.meta_data.update({
+                block[0]: Block(self.project_id,
+                                self.vault_id,
+                                block_id=block[0],
+                                data=None,
+                                block_size=0,
+                                ref_count=0,
+                                block_orphaned=False,
+                                ref_modified=generate_ref_modified_now()
+                                )
+                for block in create_blocks(block_count=count)})
 
     def generate_blocks(self, count):
 
@@ -459,3 +477,80 @@ class TestValereClientBase(unittest.TestCase):
 
         else:
             return (404, headers, 'invalid block id')
+
+    def guarantee_expired(self, expired_count, expired_age):
+        base_age_date = datetime.datetime.utcnow()
+
+        key_set = sorted(
+            list(self.meta_data.keys()))[0:minmax(len(self.meta_data),
+                                                  expired_count)]
+        for key in key_set:
+            self.meta_data[key].ref_count = 0
+            self.meta_data[key].ref_modified = \
+                calculate_ref_modified(base=base_age_date,
+                                       days=0, hours=0, mins=1, secs=0)
+
+        self.manager.metadata.expired = []
+        for key in key_set[:int(len(key_set) / 2)]:
+            self.manager.metadata.expired.append(key)
+
+        self.manager.expire_age = expired_age
+
+        check_count = 0
+        for key, block in self.meta_data.items():
+            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
+                block.ref_modified)
+            if check_delta > self.manager.expire_age and block.ref_count == 0:
+                check_count = check_count + 1
+                print('Block {0:} has expired age of {1}'
+                      .format(block.block_id,
+                              check_delta))
+        return check_count
+
+    def guarantee_deleted(self, count):
+        base_age_date = datetime.datetime.utcnow()
+        total_deleted = 0
+
+        if self.manager.storage.deleted is None:
+            self.manager.storage.deleted = []
+
+        if self.manager.metadata.deleted is None:
+            self.manager.metadata.deleted = []
+
+        # check the list for expired blocks and record some for
+        for key, block in self.meta_data.items():
+            if block.ref_count == 0:
+                check_delta = base_age_date - \
+                    datetime.datetime.utcfromtimestamp(block.ref_modified)
+                if check_delta > self.manager.expire_age:
+                    self.manager.storage.deleted.append(block.storage_id)
+                    self.manager.metadata.deleted.append(block.block_id)
+                    total_deleted = total_deleted + 1
+                    print('Block {0:} is deleted'
+                          .format(block.storage_id))
+
+            # only record as many deleted as requested
+            if total_deleted >= count:
+                break
+
+        self.assertTrue(total_deleted == count,
+            'Only {0} of {1} blocks were recorded as deleted by test setup'
+            .format(total_deleted, count))
+
+    def calculate_cross_reference_length(self):
+        if self.manager.metadata.current is None:
+            return 0
+
+        expected_length = len(self.manager.metadata.current)
+        for block_id in self.manager.metadata.current:
+            if self.manager.metadata.expired is not None:
+                if block_id in self.manager.metadata.expired:
+                    expected_length = expected_length - 1
+                continue
+
+            if self.manager.metadata.deleted is not None:
+                if block_id in self.manager.metadata.deleted:
+                    expected_length = expected_length - 1
+                continue
+
+        return expected_length

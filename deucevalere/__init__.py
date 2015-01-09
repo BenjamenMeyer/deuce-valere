@@ -129,6 +129,9 @@ def vault_cleanup(deuece_client, vault, manager):
                                  vault=vault,
                                  manager=manager)
 
+    # expired_data = manager.metadata.expired
+    # orphaned_data = manager.storage.orphaned
+
     expired_metadata_count = len(manager.metadata.expired)\
         if manager.metadata.expired is not None else 0
     orphaned_storage_count = len(manager.storage.orphaned)\
@@ -156,9 +159,91 @@ def vault_cleanup(deuece_client, vault, manager):
     return_value = 0
 
     if expired_metadata_count != len(manager.metadata.deleted):
+        msg = 'Deletion failed to delete all expired data: {0} != {1}'\
+              .format(expired_metadata_count,
+                      len(manager.metadata.deleted))
+        log.error(msg)
+
+        # log.debug('Expired Data')
+        # for blockid in expired_data:
+        #     log.debug('Block ID: {0}'.format(blockid))
+
+        # log.debug('Deleted Data')
+        # for blockid in manager.metadata.deleted:
+        #     log.debug('Block ID: {0}'.format(blockid))
+
         return_value = return_value | 1
 
     if orphaned_storage_count != len(manager.storage.deleted):
+        msg = 'Deletion failed to delete all orphaned data: {0} != {1}'\
+              .format(orphaned_storage_count,
+                      len(manager.storage.deleted))
+        log.error(msg)
+
+        # log.debug('Orphaned Data')
+        # for blockid in orphaned_data:
+        #     log.debug('Block ID: {0}'.format(blockid))
+
+        # log.debug('Deleted Data')
+        # for blockid in manager.storage.deleted:
+        #     log.debug('Block ID: {0}'.format(blockid))
+
         return_value = return_value | 2
 
     return return_value
+
+
+@validate(deuece_client=ClientRule,
+          vault=VaultInstanceRule,
+          manager=ValereManagerRule)
+def vault_reload(deuece_client, vault, manager):
+    """Validate the Deuce Vault by checking all blocks exist
+
+    :param deuece_client: instance of deuceclient.client.deuce
+                          to use for interacting with the Deuce Service
+    :param vault: instance of deuceclient.api.Vault for the
+                  vault to be inspected and cleaned
+    :param manager: deucevalere.api.system.Manager instance that will track
+                    the state of the system and all statistics
+
+    :returns: zero (0) if all
+    :raises: RuntimeError on error
+    """
+    log = logging.getLogger(__name__)
+
+    log.info('***********************************************************')
+    log.info('***********************************************************')
+    log.info('Reloading Vault. There may be some discrepencies.')
+    log.info('It is recommended for best accurancy to re-validate as well')
+    log.info('***********************************************************')
+    log.info('***********************************************************')
+
+    # create the valiere client
+    valere_client = ValereClient(deuce_client=deuece_client,
+                                 vault=vault,
+                                 manager=manager)
+
+    # While the validate_metadata() will automatically get
+    # the block list, do it now so that it can be easily
+    # documented if there is a failure as being the specific
+    # issue at hand. All blocks are stored in the 'current'
+    # list for metadata data.
+    try:
+        valere_client.get_block_list()
+    except Exception as ex:
+        msg = 'Failed to retrieve Metadata Blocks. Error: {0}'\
+            .format(str(ex))
+        log.error(msg)
+        raise RuntimeError(msg)
+
+    # While validate_storage*() will automatically get
+    # the storage block list, do it now so that is can be
+    # easily documented if there is a failure here. All blocks
+    # are stored in the 'current' list for storage data.
+    try:
+        valere_client.get_storage_list()
+    except Exception as ex:
+        msg = 'Failed to retrieve Storage Blocks. Error: {0}'\
+            .format(str(ex))
+        log.error(msg)
+        raise RuntimeError(msg)

@@ -62,37 +62,16 @@ class TestValereClientBuildCrossReference(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
         self.client.cleanup_expired_blocks()
 
-        expected_length = len(self.manager.metadata.current) - \
-            len(self.manager.metadata.expired) - \
-            len(self.manager.metadata.deleted)
+        expected_length = self.calculate_cross_reference_length()
 
         self.client.build_cross_references()
+
         self.assertEqual(expected_length,
                          len(self.manager.cross_reference))
 
@@ -126,34 +105,13 @@ class TestValereClientBuildCrossReference(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
         self.client.cleanup_expired_blocks()
 
-        expected_length = len(self.manager.metadata.current) - \
-            len(self.manager.metadata.deleted)
+        expected_length = self.calculate_cross_reference_length()
 
         self.client.build_cross_references(skip_expired=True)
         self.assertEqual(expected_length,
@@ -189,33 +147,12 @@ class TestValereClientBuildCrossReference(TestValereClientBase):
                                self.get_metadata_block_pattern_matcher(),
                                body=metadata_delete_callback)
 
-        base_age_date = datetime.datetime.utcnow()
-
-        key_set = sorted(
-            list(self.meta_data.keys()))[0:minmax(len(self.meta_data), 10)]
-        for key in key_set:
-            self.meta_data[key].ref_count = 0
-            self.meta_data[key].ref_modified = \
-                calculate_ref_modified(base=base_age_date,
-                                       days=0, hours=0, mins=1, secs=0)
-
-        self.manager.metadata.expired = []
-        for key in key_set[:int(len(key_set) / 2)]:
-            self.manager.metadata.expired.append(key)
-
-        self.manager.expire_age = datetime.timedelta(minutes=1)
-
-        check_count = 0
-        for key, block in self.meta_data.items():
-            check_delta = base_age_date - datetime.datetime.utcfromtimestamp(
-                block.ref_modified)
-            if check_delta > self.manager.expire_age and block.ref_count == 0:
-                check_count = check_count + 1
+        self.guarantee_expired(expired_count=10,
+                               expired_age=datetime.timedelta(minutes=1))
 
         self.client.validate_metadata()
 
-        expected_length = len(self.manager.metadata.current) - \
-            len(self.manager.metadata.expired)
+        expected_length = self.calculate_cross_reference_length()
 
         self.client.build_cross_references()
         self.assertEqual(expected_length,

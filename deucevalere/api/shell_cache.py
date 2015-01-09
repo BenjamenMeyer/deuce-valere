@@ -10,6 +10,7 @@ import os.path
 import tempfile
 
 from stoplight import validate
+from deuceclient.api import Vault
 from deuceclient.common.validation import *
 from deuceclient.common.validation_instance import *
 
@@ -251,7 +252,7 @@ class ShellCache(object):
                 'second': now.second,
                 'microsecond': now.microsecond
             },
-            'manager': manager.to_json()
+            'manager': manager.serialize()
         })
 
         key = self.__get_key(vault,
@@ -269,6 +270,26 @@ class ShellCache(object):
             self.log.error(
                 'Error while writing to cache: {0}'.format(str(ex)))
             raise
+
+    @validate(vault=VaultInstanceRule,
+              manager=ValereManagerRule)
+    def clear_manager(self, vault, manager):
+        """Add the vault to the cache
+
+        :parameter vault: instance of deuceclient.api.Vault
+        :parameter manager: instance of deucevalere.api.system.Manager
+
+        :returns: None
+        :raises: Passes thru any exceptions while trying to write
+                 the data to disk
+        """
+        key = self.__get_key(vault,
+                             manager.start_block,
+                             manager.end_block)
+        file_name = self.__get_manager_cache_file(key)
+        self.log.info('Clearing cache file {0}'.format(file_name))
+        if os.path.exists(file_name):
+            os.remove(file_name)
 
     @validate(vault=VaultInstanceRule,
               start_block=MetadataBlockIdRuleNoneOkay,
@@ -305,7 +326,7 @@ class ShellCache(object):
                     json_data = json.loads(data_store.read())
 
                     if cache_age_max is None:
-                        return Manager.from_json(json_data['manager'])
+                        return Manager.deserialize(json_data['manager'])
 
                     else:
                         then = datetime.datetime(
@@ -320,7 +341,7 @@ class ShellCache(object):
                                           then)
 
                         if cache_data_age < cache_age_max:
-                            return Manager.from_json(json_data['manager'])
+                            return Manager.deserialize(json_data['manager'])
                         else:
                             raise ExpiredCacheData(
                                 'Cached data in {0} from {1} < {2} -> expired '
@@ -359,7 +380,7 @@ class ShellCache(object):
                 'second': now.second,
                 'microsecond': now.microsecond
             },
-            'vault': json.dumps(None)
+            'vault': vault.serialize()
         })
 
         key = self.__get_key(vault,
@@ -379,10 +400,30 @@ class ShellCache(object):
             raise
 
     @validate(vault=VaultInstanceRule,
+              manager=ValereManagerRule)
+    def clear_vault(self, vault, manager):
+        """Add the vault to the cache
+
+        :parameter vault: instance of deuceclient.api.Vault
+        :parameter manager: instance of deucevalere.api.system.Manager
+
+        :returns: None
+        :raises: Passes thru any exceptions while trying to write
+                 the data to disk
+        """
+        key = self.__get_key(vault,
+                             manager.start_block,
+                             manager.end_block)
+        file_name = self.__get_vault_cache_file(key)
+        self.log.info('Clearing cache file {0}'.format(file_name))
+        if os.path.exists(file_name):
+            os.remove(file_name)
+
+    @validate(vault=VaultInstanceRule,
               start_block=MetadataBlockIdRuleNoneOkay,
               end_block=MetadataBlockIdRuleNoneOkay,
               cache_age_max=ExpireAgeRuleNoneOkay)
-    def get_vault(self, vault, start_block, end_block, cache_age_max):
+    def load_vault(self, vault, start_block, end_block, cache_age_max):
         """Retrieve the cached data from disk
 
         :parameter vault: instance of deuceclient.api.Vault
@@ -416,8 +457,7 @@ class ShellCache(object):
                     self.log.debug('File read and parsed')
 
                     if cache_age_max is None:
-                        raise NotImplementedError(
-                            'Vault Deserialization not implemented')
+                        return Vault.deserialize(json_data['vault'])
 
                     else:
                         then = datetime.datetime(
@@ -432,8 +472,8 @@ class ShellCache(object):
                                           then)
 
                         if cache_data_age < cache_age_max:
-                            raise NotImplementedError(
-                                'Vault Deserialization not implemented')
+                            return Vault.deserialize(json_data['vault'])
+
                         else:
                             raise ExpiredCacheData(
                                 'Cached data in {0} from {1} < {2} -> expired '
