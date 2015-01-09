@@ -198,21 +198,56 @@ def print_report(manager, title=None, show_missing=True,
                                calc_kilobytes(manager.expired_counter.size),
                                manager.expired_counter.size])
 
+    if show_deleted is True:
+        display_table.add_row(['Deleted (Expired)',
+                               manager.delete_expired_counter.count,
+                               calc_gigabytes(
+                                   manager.delete_expired_counter.size),
+                               calc_megabytes(
+                                   manager.delete_expired_counter.size),
+                               calc_kilobytes(
+                                   manager.delete_expired_counter.size),
+                               manager.delete_expired_counter.size])
+
+    # Note: Unless we add the block size to the download deletion response
+    #       then there is no way to know how big the orphaned data is
     if show_orphaned is True:
-        display_table.add_row(['Orphaned',
-                               manager.orphaned_counter.count,
-                               calc_gigabytes(manager.orphaned_counter.size),
-                               calc_megabytes(manager.orphaned_counter.size),
-                               calc_kilobytes(manager.orphaned_counter.size),
-                               manager.orphaned_counter.size])
+        if manager.orphaned_counter.size > 0:
+            display_table.add_row(['Orphaned',
+                                   manager.orphaned_counter.count,
+                                   calc_gigabytes(
+                                       manager.orphaned_counter.size),
+                                   calc_megabytes(
+                                       manager.orphaned_counter.size),
+                                   calc_kilobytes(
+                                       manager.orphaned_counter.size),
+                                   manager.orphaned_counter.size])
+        else:
+            display_table.add_row(['Orphaned',
+                                   manager.orphaned_counter.count,
+                                   '-',
+                                   '-',
+                                   '-',
+                                   '-'])
 
     if show_deleted is True:
-        display_table.add_row(['Deleted',
-                               manager.deleted_counter.count,
-                               calc_gigabytes(manager.deleted_counter.size),
-                               calc_megabytes(manager.deleted_counter.size),
-                               calc_kilobytes(manager.deleted_counter.size),
-                               manager.deleted_counter.size])
+        if manager.delete_orphaned_counter.count > 0:
+            display_table.add_row(['Deleted (Orphaned)',
+                                   manager.delete_orphaned_counter.count,
+                                   calc_gigabytes(
+                                       manager.delete_orphaned_counter.size),
+                                   calc_megabytes(
+                                       manager.delete_orphaned_counter.size),
+                                   calc_kilobytes(
+                                       manager.delete_orphaned_counter.size),
+                                   manager.delete_orphaned_counter.size])
+        else:
+            display_table.add_row(['Deleted (Orphaned)',
+                                   manager.delete_orphaned_counter.count,
+                                   '-',
+                                   '-',
+                                   '-',
+                                   '-'])
 
     if title:
         print(title)
