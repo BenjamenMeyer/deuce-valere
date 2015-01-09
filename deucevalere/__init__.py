@@ -24,14 +24,14 @@ def version():
                               __DEUCE_VALERE_VERSION__['minor'])
 
 
-@validate(deuece_client=ClientRule,
+@validate(deuce_client=ClientRule,
           vault=VaultInstanceRule,
           manager=ValereManagerRule)
-def vault_validate(deuece_client, vault, manager,
+def vault_validate(deuce_client, vault, manager,
                    head_storage_blocks=False):
     """Validate the Deuce Vault by checking all blocks exist
 
-    :param deuece_client: instance of deuceclient.client.deuce
+    :param deuce_client: instance of deuceclient.client.deuce
                           to use for interacting with the Deuce Service
     :param vault: instance of deuceclient.api.Vault for the
                   vault to be inspected and cleaned
@@ -44,7 +44,7 @@ def vault_validate(deuece_client, vault, manager,
     log = logging.getLogger(__name__)
 
     # create the valiere client
-    valere_client = ValereClient(deuce_client=deuece_client,
+    valere_client = ValereClient(deuce_client=deuce_client,
                                  vault=vault,
                                  manager=manager)
 
@@ -104,13 +104,13 @@ def vault_validate(deuece_client, vault, manager,
     return 0
 
 
-@validate(deuece_client=ClientRule,
+@validate(deuce_client=ClientRule,
           vault=VaultInstanceRule,
           manager=ValereManagerRule)
-def vault_cleanup(deuece_client, vault, manager):
+def vault_cleanup(deuce_client, vault, manager):
     """Cleanup the Deuce Vault by removing orphaned data
 
-    :param deuece_client: instance of deuceclient.client.deuce
+    :param deuce_client: instance of deuceclient.client.deuce
                           to use for interacting with the Deuce Service
     :param vault: instance of deuceclient.api.Vault for the
                   vault to be inspected and cleaned
@@ -128,7 +128,7 @@ def vault_cleanup(deuece_client, vault, manager):
     log = logging.getLogger(__name__)
 
     # create the valiere client
-    valere_client = ValereClient(deuce_client=deuece_client,
+    valere_client = ValereClient(deuce_client=deuce_client,
                                  vault=vault,
                                  manager=manager)
 
@@ -196,13 +196,13 @@ def vault_cleanup(deuece_client, vault, manager):
     return return_value
 
 
-@validate(deuece_client=ClientRule,
+@validate(deuce_client=ClientRule,
           vault=VaultInstanceRule,
           manager=ValereManagerRule)
-def vault_reload(deuece_client, vault, manager):
+def vault_reload(deuce_client, vault, manager):
     """Validate the Deuce Vault by checking all blocks exist
 
-    :param deuece_client: instance of deuceclient.client.deuce
+    :param deuce_client: instance of deuceclient.client.deuce
                           to use for interacting with the Deuce Service
     :param vault: instance of deuceclient.api.Vault for the
                   vault to be inspected and cleaned
@@ -222,7 +222,7 @@ def vault_reload(deuece_client, vault, manager):
     log.info('***********************************************************')
 
     # create the valiere client
-    valere_client = ValereClient(deuce_client=deuece_client,
+    valere_client = ValereClient(deuce_client=deuce_client,
                                  vault=vault,
                                  manager=manager)
 
