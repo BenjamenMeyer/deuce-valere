@@ -251,6 +251,7 @@ class Manager(object):
             'cleanup': TimeManager('cleanup')
         }
         self.__counters = {
+            'current': CounterManager('current'),
             'deleted': CounterManager('deleted'),
             'expired': CounterManager('expired'),
             'missing': CounterManager('missing'),
@@ -291,6 +292,7 @@ class Manager(object):
                 'cleanup': self.__times['cleanup'].serialize()
             },
             'counts': {
+                'current': self.__counters['current'].serialize(),
                 'deleted': self.__counters['deleted'].serialize(),
                 'expired': self.__counters['expired'].serialize(),
                 'missing': self.__counters['missing'].serialize(),
@@ -320,6 +322,8 @@ class Manager(object):
             serialized_data['times']['validation'])
         m.__times['cleanup'] = TimeManager.deserialize(
             serialized_data['times']['cleanup'])
+        m.__counters['current'] = CounterManager.deserialize(
+            serialized_data['counts']['current'])
         m.__counters['expired'] = CounterManager.deserialize(
             serialized_data['counts']['expired'])
         m.__counters['deleted'] = CounterManager.deserialize(
@@ -364,6 +368,10 @@ class Manager(object):
     @property
     def cleanup_timer(self):
         return self.__times['cleanup']
+
+    @property
+    def current_counter(self):
+        return self.__counters['current']
 
     @property
     def deleted_counter(self):

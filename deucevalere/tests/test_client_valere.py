@@ -18,3 +18,10 @@ class TestValereClientBasics(TestValereClientBase):
 
     def test_valere_client_creation(self):
         client = ValereClient(self.deuce_client, self.vault, self.manager)
+
+    def test_valere_client_calculate_current(self):
+        client = ValereClient(self.deuce_client, self.vault, self.manager)
+
+        self.assertIsNone(self.manager.metadata.current)
+
+        client.calculate_current()

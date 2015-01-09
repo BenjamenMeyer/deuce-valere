@@ -175,6 +175,13 @@ def print_report(manager, title=None, show_missing=True,
     def calc_gigabytes(b):
         return calc_megabytes(b) / 1024.0
 
+    display_table.add_row(['Current',
+                           manager.current_counter.count,
+                           calc_gigabytes(manager.current_counter.size),
+                           calc_megabytes(manager.current_counter.size),
+                           calc_kilobytes(manager.current_counter.size),
+                           manager.current_counter.size])
+
     if show_missing is True:
         display_table.add_row(['Missing',
                                manager.missing_counter.count,
