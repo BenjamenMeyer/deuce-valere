@@ -237,3 +237,169 @@ class TestValereClientValidateStorageWithHEAD(TestValereClientBase):
 
         self.assertEqual(0,
                          len(self.manager.storage.orphaned))
+
+    def test_validate_storage_with_head_with_orphaned_blocks(self):
+        """Basic Validate Storage Test
+
+            Note: "orphaned" data is only what was deleted
+                  this is just due to how the test is structured.
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        def storage_head_callback(request, uri, headers):
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_head_callback)
+
+        self.generate_orphaned_blocks(self.orphaned_count)
+
+        self.assertIsNone(self.manager.storage.orphaned)
+        self.client.validate_storage_with_head()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+
+        self.assertEqual(self.orphaned_count,
+                         len(self.manager.storage.orphaned))
+
+    def test_validate_storage_with_head_with_zero_block_length(self):
+        """Basic Validate Storage Test
+
+            Note: "orphaned" data is only what was deleted
+                  this is just due to how the test is structured.
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def metadata_listing_callback(request, uri, headers):
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
+
+        def metadata_head_callback(request, uri, headers):
+            return self.metadata_block_head_success(request,
+                                                    uri,
+                                                    headers)
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        def storage_head_callback(request, uri, headers):
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_metadata_block_pattern_matcher(),
+                               body=metadata_head_callback)
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_head_callback)
+
+        self.generate_orphaned_blocks(self.orphaned_count)
+
+        self.generate_null_block(block_in_metadata=True,
+                                 orphaned_count=self.orphaned_count)
+
+        self.client.get_block_list()
+        for block_id in self.vault.blocks:
+            self.client.deuceclient.HeadBlock(self.vault,
+                                              self.vault.blocks[block_id])
+        self.client.build_cross_references()
+
+        self.assertIsNone(self.manager.storage.orphaned)
+        self.client.validate_storage_with_head()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+
+        self.assertEqual((self.orphaned_count * 2),
+                         len(self.manager.storage.orphaned))
+
+    def test_validate_storage_with_head_with_zero_block_length_second(self):
+        """Basic Validate Storage Test
+
+            Note: "orphaned" data is only what was deleted
+                  this is just due to how the test is structured.
+        """
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def metadata_listing_callback(request, uri, headers):
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
+
+        def metadata_head_callback(request, uri, headers):
+            return self.metadata_block_head_success(request,
+                                                    uri,
+                                                    headers)
+
+        def storage_listing_callback(request, uri, headers):
+            return self.storage_block_listing_success(request,
+                                                      uri,
+                                                      headers)
+
+        def storage_head_callback(request, uri, headers):
+            return self.storage_block_head_success(request,
+                                                   uri,
+                                                   headers)
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_metadata_block_pattern_matcher(),
+                               body=metadata_head_callback)
+
+        surl = get_storage_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               surl,
+                               body=storage_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_storage_block_pattern_matcher(),
+                               body=storage_head_callback)
+
+        self.generate_orphaned_blocks(self.orphaned_count)
+        self.generate_null_block(block_in_metadata=False,
+                                 orphaned_count=self.orphaned_count)
+
+        self.client.get_block_list()
+        for block_id in self.vault.blocks:
+            self.client.deuceclient.HeadBlock(self.vault,
+                                              self.vault.blocks[block_id])
+        self.client.build_cross_references()
+
+        self.assertIsNone(self.manager.storage.orphaned)
+        self.client.validate_storage_with_head()
+        self.assertIsInstance(self.manager.storage.orphaned, list)
+
+        self.assertEqual((self.orphaned_count * 2),
+                         len(self.manager.storage.orphaned))
