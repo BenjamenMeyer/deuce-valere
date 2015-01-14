@@ -42,6 +42,41 @@ class TestValereClientValidateMetadata(TestValereClientBase):
         self.assertEqual(len(self.manager.metadata.expired), 0)
         self.assertIsNone(self.manager.metadata.deleted, None)
 
+    def test_validate_metadata_missing_blocks(self):
+        self.secondary_setup(manager_start=None,
+                             manager_end=None)
+
+        def metadata_listing_callback(request, uri, headers):
+            return self.metadata_block_listing_success(request,
+                                                       uri,
+                                                       headers)
+
+        def metadata_head_callback(request, uri, headers):
+            return self.metadata_block_head_missing(request,
+                                                    uri,
+                                                    headers)
+
+        url = get_blocks_url(self.apihost, self.vault.vault_id)
+        httpretty.register_uri(httpretty.GET,
+                               url,
+                               body=metadata_listing_callback)
+
+        httpretty.register_uri(httpretty.HEAD,
+                               self.get_metadata_block_pattern_matcher(),
+                               body=metadata_head_callback)
+
+        self.client.get_block_list()
+        self.assertEqual(len(self.manager.metadata.current),
+                         len(self.meta_data))
+
+        self.client.validate_metadata()
+        self.assertEqual(len(self.manager.metadata.current),
+                         len(self.meta_data))
+        self.assertNotEqual(self.manager.missing_counter.count, 0)
+        self.assertEqual(self.manager.missing_counter.count,
+                         len(self.meta_data))
+        self.assertIsNone(self.manager.metadata.deleted, None)
+
     def test_validate_metadata_no_expiration_existing_current(self):
         self.secondary_setup(manager_start=None,
                              manager_end=None)

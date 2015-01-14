@@ -491,6 +491,27 @@ class TestValereClientBase(VaultTestBase):
         else:
             return (404, headers, 'invalid block id')
 
+    def metadata_block_head_missing(self, request, uri, headers):
+        parsed_url = urllib.parse.urlparse(uri)
+        url_path_parts = parsed_url.path.split('/')
+        requested_vault_id = url_path_parts[3]
+        requested_block_id = url_path_parts[-1]
+
+        if requested_vault_id != self.vault.vault_id:
+            return (404, headers, 'invalid vault id')
+
+        if requested_block_id in self.meta_data:
+
+            bid = requested_block_id
+            headers['X-Block-Reference-Count'] = self.meta_data[bid].ref_count
+            headers['X-Ref-Modified'] = self.meta_data[bid].ref_modified
+            headers['X-Storage-ID'] = self.meta_data[bid].storage_id
+            headers['X-Block-ID'] = self.meta_data[bid].block_id
+            return (410, headers, '')
+
+        else:
+            return (404, headers, 'invalid block id')
+
     def storage_listing_generator(self, uri):
         sorted_storage_data_info = sorted(self.storage_data.keys())
 
