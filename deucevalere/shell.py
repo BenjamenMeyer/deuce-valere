@@ -175,6 +175,25 @@ def print_report(manager, title=None, show_missing=True,
     def calc_gigabytes(b):
         return calc_megabytes(b) / 1024.0
 
+    def make_row_value_or_na(name, counter, counter_null_value='-'):
+        print('Counter - name {0}, size: {1}'.format(name, counter.size))
+        if counter.size > 0:
+            print('\tHas data. Displaying...')
+            display_table.add_row([name,
+                                   counter.count,
+                                   calc_gigabytes(counter.size),
+                                   calc_megabytes(counter.size),
+                                   calc_kilobytes(counter.size),
+                                   counter.size])
+        else:
+            print('\tNo data. Using null value {0}'.format(counter_null_value))
+            display_table.add_row([name,
+                                   counter.count,
+                                   counter_null_value,
+                                   counter_null_value,
+                                   counter_null_value,
+                                   counter_null_value])
+
     display_table.add_row(['Current',
                            manager.current_counter.count,
                            calc_gigabytes(manager.current_counter.size),
@@ -183,71 +202,23 @@ def print_report(manager, title=None, show_missing=True,
                            manager.current_counter.size])
 
     if show_missing is True:
-        display_table.add_row(['Missing',
-                               manager.missing_counter.count,
-                               calc_gigabytes(manager.missing_counter.size),
-                               calc_megabytes(manager.missing_counter.size),
-                               calc_kilobytes(manager.missing_counter.size),
-                               manager.missing_counter.size])
+        make_row_value_or_na('Missing', manager.missing_counter)
 
     if show_expired is True:
-        display_table.add_row(['Expired',
-                               manager.expired_counter.count,
-                               calc_gigabytes(manager.expired_counter.size),
-                               calc_megabytes(manager.expired_counter.size),
-                               calc_kilobytes(manager.expired_counter.size),
-                               manager.expired_counter.size])
+        make_row_value_or_na('Expired', manager.expired_counter)
 
-    if show_deleted is True:
-        display_table.add_row(['Deleted (Expired)',
-                               manager.delete_expired_counter.count,
-                               calc_gigabytes(
-                                   manager.delete_expired_counter.size),
-                               calc_megabytes(
-                                   manager.delete_expired_counter.size),
-                               calc_kilobytes(
-                                   manager.delete_expired_counter.size),
-                               manager.delete_expired_counter.size])
+        if show_deleted is True:
+            make_row_value_or_na('Deleted (Expired)',
+                                 manager.delete_expired_counter)
 
     # Note: Unless we add the block size to the download deletion response
     #       then there is no way to know how big the orphaned data is
     if show_orphaned is True:
-        if manager.orphaned_counter.size > 0:
-            display_table.add_row(['Orphaned',
-                                   manager.orphaned_counter.count,
-                                   calc_gigabytes(
-                                       manager.orphaned_counter.size),
-                                   calc_megabytes(
-                                       manager.orphaned_counter.size),
-                                   calc_kilobytes(
-                                       manager.orphaned_counter.size),
-                                   manager.orphaned_counter.size])
-        else:
-            display_table.add_row(['Orphaned',
-                                   manager.orphaned_counter.count,
-                                   '-',
-                                   '-',
-                                   '-',
-                                   '-'])
+        make_row_value_or_na('Orphaned', manager.orphaned_counter)
 
-    if show_deleted is True:
-        if manager.delete_orphaned_counter.size > 0:
-            display_table.add_row(['Deleted (Orphaned)',
-                                   manager.delete_orphaned_counter.count,
-                                   calc_gigabytes(
-                                       manager.delete_orphaned_counter.size),
-                                   calc_megabytes(
-                                       manager.delete_orphaned_counter.size),
-                                   calc_kilobytes(
-                                       manager.delete_orphaned_counter.size),
-                                   manager.delete_orphaned_counter.size])
-        else:
-            display_table.add_row(['Deleted (Orphaned)',
-                                   manager.delete_orphaned_counter.count,
-                                   '-',
-                                   '-',
-                                   '-',
-                                   '-'])
+        if show_deleted is True:
+            make_row_value_or_na('Deleted (Orphaned)',
+                                 manager.delete_orphaned_counter)
 
     if title:
         print(title)
@@ -278,10 +249,8 @@ def vault_validate(log, arguments):
         cache.add_manager(vault, manager)
         cache.add_vault(vault, manager)
         # hide deleted b/c that is not covered here
-        # hide missing b/c it cannot be detected yet
         print_report(manager,
                      title='Validation Report',
-                     show_missing=False,
                      show_deleted=False)
     else:
         print('Validation Failed with error code {0}'.format(returnValue))
@@ -344,7 +313,7 @@ def vault_cleanup(log, arguments):
         print('Clean up Failed with error code {0}'.format(returnValue))
 
     # hide missing b/c that cannot be detected yet
-    print_report(manager, title='Cleanup Report', show_missing=False)
+    print_report(manager, title='Cleanup Report')
 
     sys.exit(returnValue)
 

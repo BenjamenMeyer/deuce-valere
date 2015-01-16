@@ -5,6 +5,7 @@ import datetime
 import logging
 
 from deuceclient.api import Block
+from deuceclient.common import errors as deuce_errors
 from stoplight import validate
 
 from deucevalere.common.validation import *
@@ -142,6 +143,15 @@ class ValereClient(object):
                 # Access the block so that Deuce validates it all internally
                 block = self.deuceclient.HeadBlock(self.vault,
                                                    self.vault.blocks[block_id])
+
+            except deuce_errors.MissingBlockError as missing_ex:
+                self.log.warn('Project ID {0}, Vault {1} - '
+                              'Block {2} error missing storage block '
+                              .format(self.vault.project_id,
+                                      self.vault.vault_id,
+                                      block_id))
+                self.manager.missing_counter.add(1, 0)
+                block = None
 
             except Exception as ex:
                 # if there was a problem just mark the block as None so it
